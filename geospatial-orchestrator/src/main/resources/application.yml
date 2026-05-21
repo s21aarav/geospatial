@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: geospatial-orchestrator
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: aaravsingh # Using default OS user for homebrew postgres
+    password: 
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.military.intelligence: DEBUG

@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-tactical-dark: #0a0a0a;
+  --color-tactical-panel: #111111;
+  --color-tactical-accent: #ffffff;
+  --color-tactical-success: #4ade80;
+  --color-tactical-warning: #facc15;
+  --color-tactical-danger: #f87171;
+  --color-tactical-text: #e5e5e5;
+  --color-tactical-muted: #737373;
+}
+
+@layer base {
+  body {
+    @apply bg-tactical-dark text-tactical-text font-sans antialiased overflow-x-hidden;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+.glass-panel {
+  @apply bg-tactical-panel border border-tactical-muted/20 shadow-lg;
+}
+
+/* Scrollbar styles for a mature look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

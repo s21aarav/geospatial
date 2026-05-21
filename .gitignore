@@ -1,0 +1,39 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Python virtual environment & cache
+ai-worker-env/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Datasets and database dumps (too large for GitHub)
+data/
+**/*.sql
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Node / Frontend build outputs (failsafes for nested projects)
+**/node_modules/
+**/dist/
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+
+# Java / Maven build outputs (failsafes for nested projects)
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+**/build/

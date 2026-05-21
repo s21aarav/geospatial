@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ankane/pgvector:v0.5.1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./geospatial-orchestrator
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    volumes:
+      - /tmp/geo_ingest:/tmp/geo_ingest
+      # Mounting user data folder so backend can serve ingested images via endpoint
+      - ./data/eurosat/web:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web
+    depends_on:
+      - postgres
+      - rabbitmq
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080/api/v1/intelligence
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
