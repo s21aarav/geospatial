@@ -20,6 +20,13 @@ function App() {
   const [threshold, setThreshold] = useState(0.0);
   const [terrainClass, setTerrainClass] = useState("");
   const [queryStats, setQueryStats] = useState(null);
+  
+  // Hybrid Engine parameters
+  const [searchMode, setSearchMode] = useState('HYBRID'); // VIT_ONLY, SPECTRAL_ONLY, HYBRID
+  const [vitWeight, setVitWeight] = useState(0.70);
+  const [ndviWeight, setNdviWeight] = useState(0.15);
+  const [ndwiWeight, setNdwiWeight] = useState(0.10);
+  const [brightnessWeight, setBrightnessWeight] = useState(0.05);
 
   const handleUpload = async (file) => {
     setStatus('UPLOADING');
@@ -33,6 +40,11 @@ function App() {
     formData.append('file', file);
     formData.append('topK', topK);
     formData.append('threshold', threshold);
+    formData.append('searchMode', searchMode);
+    formData.append('vitWeight', vitWeight);
+    formData.append('ndviWeight', ndviWeight);
+    formData.append('ndwiWeight', ndwiWeight);
+    formData.append('brightnessWeight', brightnessWeight);
     if (terrainClass) {
         formData.append('terrainClass', terrainClass);
     }
@@ -165,6 +177,57 @@ function App() {
                             <option value="SeaLake">Sea / Lake</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label className="block text-tactical-text font-mono text-xs mb-2">RETRIEVAL MODE</label>
+                        <select 
+                            value={searchMode} 
+                            onChange={(e) => setSearchMode(e.target.value)}
+                            className="w-full bg-tactical-bg border border-tactical-muted/30 text-tactical-text font-mono text-xs p-2 focus:outline-none focus:border-tactical-accent"
+                        >
+                            <option value="HYBRID">HYBRID (SEMANTIC + SPECTRAL)</option>
+                            <option value="VIT_ONLY">VIT_ONLY (SEMANTIC ONLY)</option>
+                            <option value="SPECTRAL_ONLY">SPECTRAL_ONLY (PHYSICS ONLY)</option>
+                        </select>
+                    </div>
+
+                    {searchMode === 'HYBRID' && (
+                        <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-tactical-muted/30">
+                            <h3 className="text-tactical-accent font-mono text-xs tracking-widest mb-1 flex justify-between">
+                                <span>HYBRID WEIGHTS</span>
+                                <span>SUM: {(vitWeight + ndviWeight + ndwiWeight + brightnessWeight).toFixed(2)}</span>
+                            </h3>
+                            {Math.abs((vitWeight + ndviWeight + ndwiWeight + brightnessWeight) - 1.0) > 0.01 && (
+                                <div className="text-[10px] text-tactical-danger font-mono bg-tactical-danger/10 p-1 border border-tactical-danger/20 mb-2">
+                                    WARNING: Weights do not sum to 1.0. Backend will auto-normalize.
+                                </div>
+                            )}
+                            <div>
+                                <label className="flex justify-between text-tactical-text font-mono text-xs mb-1">
+                                    <span>VIT WEIGHT</span> <span>{vitWeight.toFixed(2)}</span>
+                                </label>
+                                <input type="range" min="0" max="1" step="0.05" value={vitWeight} onChange={(e) => setVitWeight(parseFloat(e.target.value))} className="w-full accent-tactical-accent h-1" />
+                            </div>
+                            <div>
+                                <label className="flex justify-between text-tactical-text font-mono text-xs mb-1">
+                                    <span>NDVI WEIGHT</span> <span>{ndviWeight.toFixed(2)}</span>
+                                </label>
+                                <input type="range" min="0" max="1" step="0.05" value={ndviWeight} onChange={(e) => setNdviWeight(parseFloat(e.target.value))} className="w-full accent-tactical-accent h-1" />
+                            </div>
+                            <div>
+                                <label className="flex justify-between text-tactical-text font-mono text-xs mb-1">
+                                    <span>NDWI WEIGHT</span> <span>{ndwiWeight.toFixed(2)}</span>
+                                </label>
+                                <input type="range" min="0" max="1" step="0.05" value={ndwiWeight} onChange={(e) => setNdwiWeight(parseFloat(e.target.value))} className="w-full accent-tactical-accent h-1" />
+                            </div>
+                            <div>
+                                <label className="flex justify-between text-tactical-text font-mono text-xs mb-1">
+                                    <span>BRIGHTNESS</span> <span>{brightnessWeight.toFixed(2)}</span>
+                                </label>
+                                <input type="range" min="0" max="1" step="0.05" value={brightnessWeight} onChange={(e) => setBrightnessWeight(parseFloat(e.target.value))} className="w-full accent-tactical-accent h-1" />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
           </div>

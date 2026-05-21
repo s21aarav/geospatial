@@ -9,6 +9,8 @@ public class VectorResponsePayload {
     private float ndvi;
     private float ndwi;
     private float brightness;
+    private Long dispatchedAt;
+    private Long embeddingCompletedAt;
 
     public UUID getTaskId() { return taskId; }
     public void setTaskId(UUID taskId) { this.taskId = taskId; }
@@ -24,4 +26,10 @@ public class VectorResponsePayload {
     
     public float getBrightness() { return brightness; }
     public void setBrightness(float brightness) { this.brightness = brightness; }
+    
+    public Long getDispatchedAt() { return dispatchedAt; }
+    public void setDispatchedAt(Long dispatchedAt) { this.dispatchedAt = dispatchedAt; }
+    
+    public Long getEmbeddingCompletedAt() { return embeddingCompletedAt; }
+    public void setEmbeddingCompletedAt(Long embeddingCompletedAt) { this.embeddingCompletedAt = embeddingCompletedAt; }
 }

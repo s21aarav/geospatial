@@ -47,7 +47,12 @@ public class IntelligenceController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "topK", defaultValue = "5") int topK,
             @RequestParam(value = "threshold", defaultValue = "0.0") double threshold,
-            @RequestParam(value = "terrainClass", required = false) String terrainClass) {
+            @RequestParam(value = "terrainClass", required = false) String terrainClass,
+            @RequestParam(value = "searchMode", defaultValue = "HYBRID") String searchMode,
+            @RequestParam(value = "vitWeight", defaultValue = "0.70") double vitWeight,
+            @RequestParam(value = "ndviWeight", defaultValue = "0.15") double ndviWeight,
+            @RequestParam(value = "ndwiWeight", defaultValue = "0.10") double ndwiWeight,
+            @RequestParam(value = "brightnessWeight", defaultValue = "0.05") double brightnessWeight) {
         
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
@@ -66,9 +71,33 @@ public class IntelligenceController {
             // Save file natively
             Files.write(destination, file.getBytes());
             
+            // Normalize weights
+            if ("HYBRID".equals(searchMode)) {
+                double total = vitWeight + ndviWeight + ndwiWeight + brightnessWeight;
+                if (total > 0) {
+                    vitWeight /= total;
+                    ndviWeight /= total;
+                    ndwiWeight /= total;
+                    brightnessWeight /= total;
+                }
+            } else if ("SPECTRAL_ONLY".equals(searchMode)) {
+                double total = ndviWeight + ndwiWeight + brightnessWeight;
+                if (total > 0) {
+                    ndviWeight /= total;
+                    ndwiWeight /= total;
+                    brightnessWeight /= total;
+                }
+            }
+            
             java.util.Map<String, Object> filters = new java.util.HashMap<>();
             filters.put("topK", topK);
             filters.put("threshold", threshold);
+            filters.put("searchMode", searchMode);
+            filters.put("vitWeight", vitWeight);
+            filters.put("ndviWeight", ndviWeight);
+            filters.put("ndwiWeight", ndwiWeight);
+            filters.put("brightnessWeight", brightnessWeight);
+            filters.put("queuedAt", System.currentTimeMillis());
             if (terrainClass != null && !terrainClass.isEmpty()) {
                 filters.put("terrainClass", terrainClass);
             }

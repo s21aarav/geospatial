@@ -11,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -45,6 +46,7 @@ services:
       - /tmp/geo_ingest:/tmp/geo_ingest
       # Mounting user data folder so backend can serve ingested images via endpoint
       - ./data/eurosat/web:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web
+      - ./data/eurosat/EuroSAT_MS:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/EuroSAT_MS
     depends_on:
       - postgres
       - rabbitmq
@@ -62,6 +64,18 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+
+  ai-worker:
+    build:
+      context: ./ai-worker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - rabbitmq
+    volumes:
+      - /tmp/geo_ingest:/tmp/geo_ingest
+      - ./data/eurosat/web:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web
+      - ./data/eurosat/EuroSAT_MS:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/EuroSAT_MS
 
 volumes:
   postgres_data:

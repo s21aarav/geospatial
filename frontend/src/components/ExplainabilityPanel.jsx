@@ -3,19 +3,29 @@ import React from 'react';
 export default function ExplainabilityPanel({ queryStats, result }) {
     if (!result) return null;
 
-    // A simple heuristic for "why is it relevant"
-    let reasoning = "Strong geometric and spectral match in the ViT latent space.";
-    if (result.ndvi > 0.4 && queryStats?.ndvi > 0.4) {
-        reasoning = "High vegetation correlation (NDVI > 0.4) indicating similar flora coverage.";
-    } else if (result.ndwi > 0.2 && queryStats?.ndwi > 0.2) {
-        reasoning = "Strong water signature match (NDWI > 0.2) indicating coastal or riverine similarities.";
-    } else if (result.brightness > 150 && queryStats?.brightness > 150) {
-        reasoning = "High albedo correlation, typical of urban concrete or bright sandy terrain.";
-    }
+    const ProgressBar = ({ label, score, colorClass }) => (
+        <div className="flex flex-col gap-1 w-full mt-1">
+            <div className="flex justify-between text-[8px] font-mono">
+                <span className="text-tactical-muted">{label}</span>
+                <span className={colorClass}>{(score * 100).toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-tactical-bg h-1 rounded-full overflow-hidden">
+                <div className={`h-full ${colorClass}`} style={{ width: `${score * 100}%` }}></div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="bg-tactical-panel border border-tactical-muted/30 p-4 w-full flex flex-col gap-4 mt-4 animate-fade-in">
-            <h3 className="text-tactical-accent font-mono text-sm tracking-widest border-b border-tactical-muted/30 pb-2">EXPLAINABILITY PANEL</h3>
+            <div className="flex justify-between items-center border-b border-tactical-muted/30 pb-2">
+                <h3 className="text-tactical-accent font-mono text-sm tracking-widest">EXPLAINABILITY PANEL</h3>
+                {queryStats?.searchMode && (
+                    <div className="flex gap-2 text-[10px] font-mono">
+                        <span className="text-tactical-muted">MODE:</span>
+                        <span className="text-tactical-text font-bold">{queryStats.searchMode}</span>
+                    </div>
+                )}
+            </div>
             
             <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
@@ -28,27 +38,27 @@ export default function ExplainabilityPanel({ queryStats, result }) {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <span className="text-[10px] text-tactical-muted font-mono tracking-widest">SPECTRAL TELEMETRY</span>
-                    <div className="bg-tactical-dark p-2 border border-tactical-muted/20 text-[10px] font-mono h-32 flex flex-col justify-center space-y-2">
-                        <div className="flex justify-between">
-                            <span className="text-tactical-muted" title="Normalized Difference Vegetation Index">NDVI:</span>
-                            <span className="text-tactical-text">{result.ndvi?.toFixed(3)} {queryStats && `(Q: ${queryStats.ndvi?.toFixed(3)})`}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-tactical-muted" title="Normalized Difference Water Index">NDWI:</span>
-                            <span className="text-tactical-text">{result.ndwi?.toFixed(3)} {queryStats && `(Q: ${queryStats.ndwi?.toFixed(3)})`}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-tactical-muted">ALBEDO:</span>
-                            <span className="text-tactical-text">{result.brightness?.toFixed(1)} {queryStats && `(Q: ${queryStats.brightness?.toFixed(1)})`}</span>
-                        </div>
+                    <span className="text-[10px] text-tactical-muted font-mono tracking-widest flex justify-between">
+                        <span>SCORE BREAKDOWN</span>
+                        {queryStats?.searchMode === 'HYBRID' && (
+                            <span>W: {(queryStats.vitWeight||0).toFixed(2)} | {(queryStats.ndviWeight||0).toFixed(2)} | {(queryStats.ndwiWeight||0).toFixed(2)} | {(queryStats.brightnessWeight||0).toFixed(2)}</span>
+                        )}
+                        {queryStats?.searchMode === 'SPECTRAL_ONLY' && (
+                            <span>W: {(queryStats.ndviWeight||0).toFixed(2)} | {(queryStats.ndwiWeight||0).toFixed(2)} | {(queryStats.brightnessWeight||0).toFixed(2)}</span>
+                        )}
+                    </span>
+                    <div className="bg-tactical-dark p-2 border border-tactical-muted/20 text-[10px] font-mono h-32 flex flex-col justify-center">
+                        <ProgressBar label={`VIT SEMANTIC${queryStats?.vitWeight ? ` (W: ${(queryStats.vitWeight).toFixed(2)})` : ''}`} score={result.vitScore || 0} colorClass="bg-tactical-accent" />
+                        <ProgressBar label={`NDVI (VEGETATION)${queryStats?.ndviWeight ? ` (W: ${(queryStats.ndviWeight).toFixed(2)})` : ''}`} score={result.ndviScore || 0} colorClass="bg-green-500" />
+                        <ProgressBar label={`NDWI (WATER)${queryStats?.ndwiWeight ? ` (W: ${(queryStats.ndwiWeight).toFixed(2)})` : ''}`} score={result.ndwiScore || 0} colorClass="bg-blue-500" />
+                        <ProgressBar label={`ALBEDO (BRIGHTNESS)${queryStats?.brightnessWeight ? ` (W: ${(queryStats.brightnessWeight).toFixed(2)})` : ''}`} score={result.brightnessScore || 0} colorClass="bg-yellow-500" />
                     </div>
                 </div>
             </div>
 
             <div className="mt-2 bg-tactical-dark p-3 border-l-2 border-tactical-accent text-xs font-mono text-tactical-text">
                 <span className="text-tactical-muted mr-2">REASONING:</span>
-                {reasoning}
+                {result.explanation || "Match computed by hybrid retrieval engine."}
             </div>
         </div>
     );

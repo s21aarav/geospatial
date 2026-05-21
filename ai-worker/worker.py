@@ -22,7 +22,8 @@ model.to(device)
 model.eval()
 
 # RabbitMQ Configuration
-RABBITMQ_HOST = 'localhost'
+import os
+RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'localhost')
 INGEST_QUEUE = 'image_ingestion_queue'
 RESPONSE_EXCHANGE = 'geo_exchange'
 RESPONSE_ROUTING_KEY = 'ai.response'
@@ -106,6 +107,7 @@ def callback(ch, method, properties, body):
         task_id = payload.get("taskId")
         file_path = payload.get("filePath")
         
+        dispatched_at = int(time.time() * 1000)
         logger.info(f"Received task: {task_id}")
         
         publish_status(ch, task_id, "FAIR_DISPATCH_ACK", "Fair Dispatch & Consumer ACK", "RabbitMQ dynamically allocating task to prevent OOM")
@@ -128,12 +130,16 @@ def callback(ch, method, properties, body):
         elif len(vector) < 768:
             vector.extend([0.0] * (768 - len(vector)))
             
+        embedding_completed_at = int(time.time() * 1000)
+            
         response_payload = {
             "taskId": task_id,
             "vector": vector,
             "ndvi": ndvi,
             "ndwi": ndwi,
-            "brightness": brightness
+            "brightness": brightness,
+            "dispatchedAt": dispatched_at,
+            "embeddingCompletedAt": embedding_completed_at
         }
         
         ch.basic_publish(

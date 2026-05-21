@@ -69,6 +69,11 @@ export default function MapResults({ results, queryStats }) {
         </div>
 
         <div className="w-full lg:w-1/4 flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-2">
+          {results.length === 0 && (
+            <div className="p-4 border border-tactical-danger/30 text-tactical-danger font-mono text-xs bg-tactical-danger/10">
+              No matches above threshold; lower threshold or remove terrain filter.
+            </div>
+          )}
           {results.map((res, idx) => (
             <div 
               key={idx} 
@@ -76,9 +81,9 @@ export default function MapResults({ results, queryStats }) {
               className="bg-tactical-panel border border-tactical-muted/20 p-3 hover:border-tactical-muted/50 transition-colors flex flex-col gap-3 cursor-pointer"
             >
               <div className="flex justify-between items-center border-b border-tactical-muted/20 pb-2">
-                <span className="font-mono font-bold text-tactical-text text-xs">#{idx + 1}</span>
+                <span className="font-mono font-bold text-tactical-text text-xs">#{idx + 1} - {res.terrainClass}</span>
                 <span className="font-mono text-tactical-dark bg-tactical-text px-1.5 py-0.5 text-[10px] font-bold">
-                  {(res.similarityScore * 100).toFixed(1)}%
+                  {(res.similarityScore * 100).toFixed(1)}% FINAL SCORE
                 </span>
               </div>
               <img 
@@ -87,10 +92,6 @@ export default function MapResults({ results, queryStats }) {
                 className="w-full h-24 object-cover border border-tactical-muted/30 grayscale hover:grayscale-0 transition-all duration-500"
               />
               <div className="font-mono text-[10px] text-tactical-muted space-y-1">
-                <div className="flex justify-between">
-                  <span>CLASS:</span>
-                  <span className="text-tactical-accent">{res.terrainClass || '—'}</span>
-                </div>
                 <div className="flex justify-between">
                   <span>ID:</span>
                   <span className="text-tactical-text truncate max-w-[120px]" title={res.filename}>
@@ -104,10 +105,6 @@ export default function MapResults({ results, queryStats }) {
                 <div className="flex justify-between">
                   <span>LON:</span>
                   <span className="text-tactical-text">{res.longitude.toFixed(4)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>NDVI:</span>
-                  <span className="text-tactical-text">{res.ndvi != null ? res.ndvi.toFixed(3) : '—'}</span>
                 </div>
               </div>
             </div>
