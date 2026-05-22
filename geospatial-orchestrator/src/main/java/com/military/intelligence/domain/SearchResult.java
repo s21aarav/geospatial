@@ -15,6 +15,7 @@ public class SearchResult {
     private double brightnessScore;
     private double hybridScore;
     private String explanation;
+    private java.util.List<java.util.List<Double>> targetPolygon;
 
     public SearchResult(String filename, double latitude, double longitude, double similarityScore, 
                         String terrainClass, float ndvi, float ndwi, float brightness,
@@ -34,6 +35,14 @@ public class SearchResult {
         this.brightnessScore = brightnessScore;
         this.hybridScore = hybridScore;
         this.explanation = explanation;
+    }
+
+    public void setTargetPolygon(java.util.List<java.util.List<Double>> targetPolygon) {
+        this.targetPolygon = targetPolygon;
+    }
+
+    public java.util.List<java.util.List<Double>> getTargetPolygon() {
+        return targetPolygon;
     }
 
     public String getFilename() { return filename; }

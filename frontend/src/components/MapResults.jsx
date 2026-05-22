@@ -13,9 +13,20 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-function ChangeView({ center, zoom }) {
+function ChangeView({ center, zoom, isActive }) {
   const map = useMap();
-  map.setView(center, zoom);
+  useEffect(() => {
+    if (!isActive) {
+      // Stop any in-flight animation to prevent NaN errors on zero-size containers
+      map.stop();
+      return;
+    }
+    try {
+      map.flyTo(center, zoom, { duration: 1.5 });
+    } catch (e) {
+      console.warn('ChangeView flyTo error (safe to ignore):', e.message);
+    }
+  }, [center, zoom, isActive, map]);
   return null;
 }
 
@@ -90,7 +101,7 @@ export default function MapResults({ results, queryStats, isActive = true }) {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:w-3/4 h-[600px] border border-tactical-muted/30 relative z-0 bg-black">
-          <MapContainer center={activeCenter} zoom={15} style={{ height: '100%', width: '100%' }}>
+          <MapContainer center={activeCenter} zoom={17} style={{ height: '100%', width: '100%' }}>
             {/* Dynamic Map Tile Layer */}
             <TileLayer
               key={mapStyle} // Forces re-render when switching providers to prevent ghost tiles
@@ -116,7 +127,7 @@ export default function MapResults({ results, queryStats, isActive = true }) {
                 </Popup>
               </Marker>
             ))}
-            <ChangeView center={activeCenter} zoom={15} />
+            <ChangeView center={activeCenter} zoom={17} isActive={isActive} />
             <MapFixer isActive={isActive} />
           </MapContainer>
         </div>

@@ -52,7 +52,11 @@ public class IntelligenceController {
             @RequestParam(value = "vitWeight", defaultValue = "0.70") double vitWeight,
             @RequestParam(value = "ndviWeight", defaultValue = "0.15") double ndviWeight,
             @RequestParam(value = "ndwiWeight", defaultValue = "0.10") double ndwiWeight,
-            @RequestParam(value = "brightnessWeight", defaultValue = "0.05") double brightnessWeight) {
+            @RequestParam(value = "brightnessWeight", defaultValue = "0.05") double brightnessWeight,
+            @RequestParam(value = "minLat", required = false) Double minLat,
+            @RequestParam(value = "maxLat", required = false) Double maxLat,
+            @RequestParam(value = "minLon", required = false) Double minLon,
+            @RequestParam(value = "maxLon", required = false) Double maxLon) {
         
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is empty");
@@ -101,6 +105,10 @@ public class IntelligenceController {
             if (terrainClass != null && !terrainClass.isEmpty()) {
                 filters.put("terrainClass", terrainClass);
             }
+            if (minLat != null) filters.put("minLat", minLat);
+            if (maxLat != null) filters.put("maxLat", maxLat);
+            if (minLon != null) filters.put("minLon", minLon);
+            if (maxLon != null) filters.put("maxLon", maxLon);
 
             // Update State to QUEUED
             StatePayload initialState = new StatePayload(TaskStatus.QUEUED, null, null, null, filters);

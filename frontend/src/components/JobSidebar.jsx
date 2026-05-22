@@ -1,12 +1,12 @@
 import React from 'react';
 import { Loader2, CheckCircle2, XCircle, CircleDashed, UploadCloud } from 'lucide-react';
 
-export default function JobSidebar({ jobs, activeJobId, setActiveJobId }) {
+export default function JobSidebar({ jobs, activeJobId, setActiveJobId, onNewUplink }) {
   return (
     <div className="w-full md:w-56 flex-shrink-0 flex flex-col gap-4">
       {/* New Uplink Button pinned at top */}
       <div 
-         onClick={() => setActiveJobId(null)}
+         onClick={onNewUplink}
          className={`border p-3 text-center cursor-pointer transition-colors flex items-center justify-center gap-2 rounded ${activeJobId === null ? 'bg-tactical-muted/10 border-tactical-accent text-tactical-accent' : 'bg-tactical-panel border-tactical-muted/30 hover:border-tactical-accent/50 text-tactical-text'}`}
       >
          <UploadCloud className="w-4 h-4" />

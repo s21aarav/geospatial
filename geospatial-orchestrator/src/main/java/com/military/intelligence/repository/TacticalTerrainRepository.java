@@ -36,6 +36,10 @@ public interface TacticalTerrainRepository extends JpaRepository<TacticalTerrain
                        END, 0.0), 1.0) as final_score
                 FROM tactical_terrain t
                 WHERE (CAST(:terrainClass AS VARCHAR) IS NULL OR t.terrain_class = CAST(:terrainClass AS VARCHAR))
+                  AND (CAST(:minLat AS FLOAT) IS NULL OR t.latitude >= CAST(:minLat AS FLOAT))
+                  AND (CAST(:maxLat AS FLOAT) IS NULL OR t.latitude <= CAST(:maxLat AS FLOAT))
+                  AND (CAST(:minLon AS FLOAT) IS NULL OR t.longitude >= CAST(:minLon AS FLOAT))
+                  AND (CAST(:maxLon AS FLOAT) IS NULL OR t.longitude <= CAST(:maxLon AS FLOAT))
             ) sub
             WHERE final_score >= :threshold
             ORDER BY final_score DESC
@@ -53,5 +57,9 @@ public interface TacticalTerrainRepository extends JpaRepository<TacticalTerrain
             @Param("vitWeight") double vitWeight,
             @Param("ndviWeight") double ndviWeight,
             @Param("ndwiWeight") double ndwiWeight,
-            @Param("brightnessWeight") double brightnessWeight);
+            @Param("brightnessWeight") double brightnessWeight,
+            @Param("minLat") Double minLat,
+            @Param("maxLat") Double maxLat,
+            @Param("minLon") Double minLon,
+            @Param("maxLon") Double maxLon);
 }

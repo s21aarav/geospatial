@@ -3,6 +3,7 @@ import Dropzone from './components/Dropzone';
 import EvaluationDashboard from './components/EvaluationDashboard';
 import JobSidebar from './components/JobSidebar';
 import JobRunner from './components/JobRunner';
+import BoundingBoxSelector from './components/BoundingBoxSelector';
 
 function App() {
   const [view, setView] = useState('SEARCH'); // SEARCH, EVALUATION
@@ -24,6 +25,10 @@ function App() {
   const [ndviWeight, setNdviWeight] = useState(0.15);
   const [ndwiWeight, setNdwiWeight] = useState(0.10);
   const [brightnessWeight, setBrightnessWeight] = useState(0.05);
+  
+  // Spatial Search
+  const [bounds, setBounds] = useState(null);
+  const [bboxEnabled, setBboxEnabled] = useState(false);
 
   const handleUpload = (file) => {
     const newJobId = Math.random().toString(36).substring(2, 15);
@@ -31,7 +36,7 @@ function App() {
       id: newJobId,
       filename: file.name,
       file: file,
-      params: { topK, threshold, searchMode, vitWeight, ndviWeight, ndwiWeight, brightnessWeight, terrainClass },
+      params: { topK, threshold, searchMode, vitWeight, ndviWeight, ndwiWeight, brightnessWeight, terrainClass, bounds },
       status: 'UPLOADING',
       visualStatus: 'UPLOADING',
       taskId: null,
@@ -43,6 +48,12 @@ function App() {
     
     setJobs(prev => [newJob, ...prev]);
     setActiveJobId(newJobId);
+  };
+
+  const openNewUplink = () => {
+    setActiveJobId(null);
+    setBounds(null);
+    setBboxEnabled(false);
   };
 
   const updateJob = useCallback((jobId, updatesOrCallback) => {
@@ -107,6 +118,7 @@ function App() {
                  jobs={jobs} 
                  activeJobId={activeJobId} 
                  setActiveJobId={setActiveJobId} 
+                 onNewUplink={openNewUplink}
               />
             )}
 
@@ -212,6 +224,13 @@ function App() {
                             </div>
                         </div>
                     )}
+                    
+                    <BoundingBoxSelector 
+                        bounds={bounds} 
+                        setBounds={setBounds} 
+                        enabled={bboxEnabled} 
+                        setEnabled={setBboxEnabled} 
+                    />
                 </div>
               </div>
             </div>

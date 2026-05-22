@@ -71,6 +71,10 @@ public class VectorResponseListener {
             double ndviWeight = 0.15;
             double ndwiWeight = 0.10;
             double brightnessWeight = 0.05;
+            Double minLat = null;
+            Double maxLat = null;
+            Double minLon = null;
+            Double maxLon = null;
 
             if (filters != null) {
                 if (filters.containsKey("topK")) { topK = Integer.parseInt(filters.get("topK").toString()); }
@@ -81,6 +85,10 @@ public class VectorResponseListener {
                 if (filters.containsKey("ndviWeight")) { ndviWeight = Double.parseDouble(filters.get("ndviWeight").toString()); }
                 if (filters.containsKey("ndwiWeight")) { ndwiWeight = Double.parseDouble(filters.get("ndwiWeight").toString()); }
                 if (filters.containsKey("brightnessWeight")) { brightnessWeight = Double.parseDouble(filters.get("brightnessWeight").toString()); }
+                if (filters.containsKey("minLat")) { minLat = Double.parseDouble(filters.get("minLat").toString()); }
+                if (filters.containsKey("maxLat")) { maxLat = Double.parseDouble(filters.get("maxLat").toString()); }
+                if (filters.containsKey("minLon")) { minLon = Double.parseDouble(filters.get("minLon").toString()); }
+                if (filters.containsKey("maxLon")) { maxLon = Double.parseDouble(filters.get("maxLon").toString()); }
             }
 
             long dbSearchStart = System.currentTimeMillis();
@@ -89,7 +97,8 @@ public class VectorResponseListener {
             List<Object[]> rows = repository.findNearestNeighborsNative(
                     vectorString, topK, threshold, terrainClass, searchMode, 
                     payload.getNdvi(), payload.getNdwi(), payload.getBrightness(),
-                    vitWeight, ndviWeight, ndwiWeight, brightnessWeight);
+                    vitWeight, ndviWeight, ndwiWeight, brightnessWeight,
+                    minLat, maxLat, minLon, maxLon);
             
             long dbSearchEnd = System.currentTimeMillis();
             
@@ -127,6 +136,58 @@ public class VectorResponseListener {
             }
             
             java.util.Map<String, Object> queryStats = new java.util.HashMap<>();
+            
+            // --- CONTOUR EXTRACTION (High-Fidelity Targeting) ---
+            try {
+                // Emit Polygon Extraction step
+                sseRegistry.sendEvent(payload.getTaskId(), java.util.Map.of(
+                    "taskId", payload.getTaskId().toString(),
+                    "status", "SEMANTIC_EXTRACTION",
+                    "name", "High-Fidelity Polygon Extraction",
+                    "desc", "Running OpenCV Edge Detection on Top 5 Targets"
+                ));
+                
+                List<java.util.Map<String, Object>> scriptInput = new ArrayList<>();
+                for (SearchResult res : results) {
+                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("category", res.getTerrainClass());
+                    map.put("filename", res.getFilename());
+                    map.put("lat", res.getLatitude());
+                    map.put("lon", res.getLongitude());
+                    scriptInput.add(map);
+                }
+                String jsonInput = objectMapper.writeValueAsString(scriptInput);
+                
+                ProcessBuilder pb = new ProcessBuilder("/Users/aaravsingh/Desktop/GROSPATIAL MODEL/ai-worker-env/bin/python", 
+                                                       "/Users/aaravsingh/Desktop/GROSPATIAL MODEL/ai-worker/extract_polygon.py");
+                Process process = pb.start();
+                java.io.OutputStream os = process.getOutputStream();
+                os.write(jsonInput.getBytes());
+                os.flush();
+                os.close();
+                
+                String jsonOutput = new String(process.getInputStream().readAllBytes());
+                process.waitFor();
+                
+                com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(jsonOutput);
+                for (int i = 0; i < rootNode.size() && i < results.size(); i++) {
+                    com.fasterxml.jackson.databind.JsonNode resNode = rootNode.get(i);
+                    com.fasterxml.jackson.databind.JsonNode polyNode = resNode.get("targetPolygon");
+                    if (polyNode != null && polyNode.isArray()) {
+                        List<List<Double>> targetPolygon = new ArrayList<>();
+                        for (com.fasterxml.jackson.databind.JsonNode ptNode : polyNode) {
+                            List<Double> pt = new ArrayList<>();
+                            pt.add(ptNode.get(0).asDouble());
+                            pt.add(ptNode.get(1).asDouble());
+                            targetPolygon.add(pt);
+                        }
+                        results.get(i).setTargetPolygon(targetPolygon);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to extract polygons via python script", e);
+            }
+            
             queryStats.put("ndvi", payload.getNdvi());
             queryStats.put("ndwi", payload.getNdwi());
             queryStats.put("brightness", payload.getBrightness());

@@ -59,7 +59,8 @@ class VectorResponseListenerTest {
         Mockito.when(repository.findNearestNeighborsNative(
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble(), Mockito.any(), Mockito.anyString(), 
                 Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble(), 
-                Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble()
+                Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble(), Mockito.anyDouble(),
+                Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
         )).thenReturn(Collections.emptyList());
 
         VectorResponsePayload payload = new VectorResponsePayload();

@@ -25,6 +25,12 @@ export default function JobRunner({ job, isActive, updateJob }) {
         if (job.params.terrainClass) {
             formData.append('terrainClass', job.params.terrainClass);
         }
+        if (job.params.bounds) {
+            formData.append('minLat', job.params.bounds[0]);
+            formData.append('maxLat', job.params.bounds[1]);
+            formData.append('minLon', job.params.bounds[2]);
+            formData.append('maxLon', job.params.bounds[3]);
+        }
 
         try {
           const response = await axios.post(`${API_BASE}/upload`, formData, {
@@ -39,7 +45,7 @@ export default function JobRunner({ job, isActive, updateJob }) {
             updateJob(job.id, { 
               status: 'ERROR', 
               visualStatus: 'ERROR',
-              errorMsg: err.response?.data || err.message 
+              errorMsg: typeof err.response?.data === 'string' ? err.response.data : (err.response?.data?.error || err.response?.data?.message || err.message || "Upload failed")
             });
           }
         }
@@ -117,7 +123,11 @@ export default function JobRunner({ job, isActive, updateJob }) {
         <ExecutionPipeline 
           events={job.events} 
           currentStatus={job.status} 
-          onVisualCompletion={() => updateJob(job.id, { visualStatus: 'COMPLETED' })}
+          onVisualCompletion={() => {
+              if (job.visualStatus !== 'COMPLETED') {
+                  updateJob(job.id, { visualStatus: 'COMPLETED' });
+              }
+          }}
         />
       )}
 
