@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal } from 'lucide-react';
 
+const pipelineSchema = [
+  { id: 'UPLOADING', name: 'SECURE_TRANSFER', fakeLogs: ['Initializing TLS tunnel...', 'Handshake OK', 'Transmitting payload...', 'Checksum verified: 0x8F9A'] },
+  { id: 'AMQP_ROUTING', name: 'AMQP_QUEUE_ROUTING', fakeLogs: ['Connecting to RabbitMQ node cluster...', 'Binding to exchange: tactical.ingress', 'Publishing event...', 'ACK received from broker'] },
+  { id: 'LZW_DECOMPRESSION', name: 'LZW_DECOMPRESSION', fakeLogs: ['Allocating 512MB RAM for buffer', 'Decoding LZW dictionary', 'Deflating stream...', 'File written to tmpfs'] },
+  { id: 'SPECTRAL_BAND_SLICING', name: 'SPECTRAL_BAND_SLICING', fakeLogs: ['Parsing GeoTIFF metadata...', 'Bands detected: B01, B02, B03, B04, B08, B11, B12', 'Slicing tensor to (13, 224, 224)', 'Reordering channels -> (C, H, W)'] },
+  { id: 'RADIOMETRIC_NORMALIZATION', name: 'RADIOMETRIC_NORMALIZATION', fakeLogs: ['Computing P2-P98 percentiles...', 'Applying Min-Max scaling...', 'Clipping outliers...', 'Signal-to-Noise Ratio enhanced'] },
+  { id: 'SLIDING_WINDOW_TILING', name: 'CONVOLUTIONAL_TILING', fakeLogs: ['Initializing sliding window kernel (224x224)', 'Padding dimensions: (0,0)', 'Stride set to 224', 'Tiles generated: 1'] },
+  { id: 'FAIR_DISPATCH_ACK', name: 'WORKER_DISPATCH', fakeLogs: ['Worker node registered', 'Checking GPU VRAM availability...', 'VRAM: 14.2GB Free', 'Task acquired by worker-node-01'] },
+  { id: 'PATCH_EMBEDDING', name: 'VIT_PATCH_EMBEDDING', fakeLogs: ['Loading ViT-B/16 weights...', 'Linear projection of 16x16 patches...', 'Generating 1D token sequence', 'Embedding complete: Shape (197, 768)'] },
+  { id: 'POSITIONAL_ENCODING', name: 'POSITIONAL_ENCODING', fakeLogs: ['Applying 1D sine-cosine encoding', 'Fusing spatial priors...', 'Token sequence normalized'] },
+  { id: 'MULTI_HEAD_ATTENTION', name: 'SELF_ATTENTION', fakeLogs: ['Initializing 12 attention heads...', 'Computing Q, K, V matrices...', 'Applying softmax...', 'Attention maps fused'] },
+  { id: 'GELU_ACTIVATION', name: 'MLP_GELU_ACTIVATION', fakeLogs: ['Applying Gaussian Error Linear Units...', 'Forward pass Layer 12...', 'Final CLS token extracted: (768,)'] },
+  { id: 'HNSW_GREEDY_SEARCH', name: 'HNSW_GRAPH_ROUTING', fakeLogs: ['Querying PostgreSQL pgvector index', 'Entering entry point ep=0', 'Traversing layer 2...', 'Traversing layer 1...', 'Layer 0 greedy search...'] },
+  { id: 'COSINE_SIMILARITY', name: 'VECTOR_COSINE_DISTANCE', fakeLogs: ['Computing exact cosine distances for top candidates...', 'Sorting by score...', 'Applying terrain filters...', 'Top-K retrieved'] },
+  { id: 'COMPLETED', name: 'INTELLIGENCE_AGGREGATED', fakeLogs: ['Pipeline successfully terminated', 'Results flushed to UI', 'Closing AMQP channel'] }
+];
+
 export default function ExecutionPipeline({ events, currentStatus, onVisualCompletion }) {
   const terminalRef = useRef(null);
   
-  const pipelineSchema = [
-    { id: 'UPLOADING', name: 'SECURE_TRANSFER', fakeLogs: ['Initializing TLS tunnel...', 'Handshake OK', 'Transmitting payload (50MB)...', 'Checksum verified: 0x8F9A'] },
-    { id: 'AMQP_ROUTING', name: 'AMQP_QUEUE_ROUTING', fakeLogs: ['Connecting to RabbitMQ node cluster...', 'Binding to exchange: tactical.ingress', 'Publishing event...', 'ACK received from broker'] },
-    { id: 'LZW_DECOMPRESSION', name: 'LZW_DECOMPRESSION', fakeLogs: ['Allocating 512MB RAM for buffer', 'Decoding LZW dictionary', 'Deflating stream...', 'File written to tmpfs'] },
-    { id: 'SPECTRAL_BAND_SLICING', name: 'SPECTRAL_BAND_SLICING', fakeLogs: ['Parsing GeoTIFF metadata...', 'Bands detected: B01, B02, B03, B04, B08, B11, B12', 'Slicing tensor to (13, 224, 224)', 'Reordering channels -> (C, H, W)'] },
-    { id: 'RADIOMETRIC_NORMALIZATION', name: 'RADIOMETRIC_NORMALIZATION', fakeLogs: ['Computing P2-P98 percentiles...', 'Applying Min-Max scaling...', 'Clipping outliers...', 'Signal-to-Noise Ratio enhanced'] },
-    { id: 'SLIDING_WINDOW_TILING', name: 'CONVOLUTIONAL_TILING', fakeLogs: ['Initializing sliding window kernel (224x224)', 'Padding dimensions: (0,0)', 'Stride set to 224', 'Tiles generated: 1'] },
-    { id: 'FAIR_DISPATCH_ACK', name: 'WORKER_DISPATCH', fakeLogs: ['Worker node registered', 'Checking GPU VRAM availability...', 'VRAM: 14.2GB Free', 'Task acquired by worker-node-01'] },
-    { id: 'PATCH_EMBEDDING', name: 'VIT_PATCH_EMBEDDING', fakeLogs: ['Loading ViT-B/16 weights...', 'Linear projection of 16x16 patches...', 'Generating 1D token sequence', 'Embedding complete: Shape (197, 768)'] },
-    { id: 'POSITIONAL_ENCODING', name: 'POSITIONAL_ENCODING', fakeLogs: ['Applying 1D sine-cosine encoding', 'Fusing spatial priors...', 'Token sequence normalized'] },
-    { id: 'MULTI_HEAD_ATTENTION', name: 'SELF_ATTENTION', fakeLogs: ['Initializing 12 attention heads...', 'Computing Q, K, V matrices...', 'Applying softmax...', 'Attention maps fused'] },
-    { id: 'GELU_ACTIVATION', name: 'MLP_GELU_ACTIVATION', fakeLogs: ['Applying Gaussian Error Linear Units...', 'Forward pass Layer 12...', 'Final CLS token extracted: (768,)'] },
-    { id: 'HNSW_GREEDY_SEARCH', name: 'HNSW_GRAPH_ROUTING', fakeLogs: ['Querying PostgreSQL pgvector index', 'Entering entry point ep=0', 'Traversing layer 2...', 'Traversing layer 1...', 'Layer 0 greedy search...'] },
-    { id: 'COSINE_SIMILARITY', name: 'VECTOR_COSINE_DISTANCE', fakeLogs: ['Computing exact cosine distances for top candidates...', 'Sorting by score...', 'Applying terrain filters...', 'Top-K retrieved'] },
-    { id: 'COMPLETED', name: 'INTELLIGENCE_AGGREGATED', fakeLogs: ['Pipeline successfully terminated', 'Results flushed to UI', 'Closing AMQP channel'] }
-  ];
-
   const [displayIndex, setDisplayIndex] = useState(0);
   const [logs, setLogs] = useState([]);
   
@@ -33,10 +33,10 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
 
   useEffect(() => {
     if (events.length > 0 && displayIndex < events.length - 1) {
-      // Blazing fast visual catch-up: 30ms per step (just enough to see it scroll)
+      // Blazing fast visual catch-up: 5ms per step (just enough to see it scroll)
       const timer = setTimeout(() => {
         setDisplayIndex(prev => prev + 1);
-      }, 30);
+      }, 5);
       return () => clearTimeout(timer);
     }
   }, [events, displayIndex]);
@@ -54,7 +54,7 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
 
   useEffect(() => {
     if ((visualStatus === 'COMPLETED' || visualStatus === 'ERROR') && onVisualCompletion) {
-      const timer = setTimeout(() => onVisualCompletion(), 400); // 400ms pause to let user see "COMPLETED" before map swap
+      const timer = setTimeout(() => onVisualCompletion(), 30); // Almost instant transition to map
       return () => clearTimeout(timer);
     }
   }, [visualStatus, onVisualCompletion]);

@@ -45,6 +45,7 @@ public class IntelligenceController {
     @PostMapping("/upload")
     public ResponseEntity<?> uploadImage(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "taskId", required = false) String taskIdStr,
             @RequestParam(value = "topK", defaultValue = "5") int topK,
             @RequestParam(value = "threshold", defaultValue = "0.0") double threshold,
             @RequestParam(value = "terrainClass", required = false) String terrainClass,
@@ -62,7 +63,16 @@ public class IntelligenceController {
             return ResponseEntity.badRequest().body("File is empty");
         }
 
-        UUID taskId = UUID.randomUUID();
+        UUID taskId;
+        if (taskIdStr != null && !taskIdStr.isEmpty()) {
+            try {
+                taskId = UUID.fromString(taskIdStr);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body("Invalid taskId format");
+            }
+        } else {
+            taskId = UUID.randomUUID();
+        }
         // Preserve original extension so rasterio/PIL can detect format
         String originalName = file.getOriginalFilename();
         String extension = ".tiff";
@@ -157,12 +167,35 @@ public class IntelligenceController {
         return emitter;
     }
 
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamGlobalStatus() {
+        // Create emitter with 30 minute timeout for global updates
+        SseEmitter emitter = new SseEmitter(1800000L);
+        sseRegistry.registerGlobal(emitter);
+        return emitter;
+    }
+
     @GetMapping(value = "/images/{category}/{filename}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getImage(@PathVariable("category") String category, @PathVariable("filename") String filename) {
         try {
             Path imagePath = Paths.get("/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web/", category, filename);
             if (Files.exists(imagePath)) {
                 byte[] imageBytes = Files.readAllBytes(imagePath);
+                return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(imageBytes);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @GetMapping(value = "/heatmap/{taskId}", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getHeatmap(@PathVariable("taskId") UUID taskId) {
+        try {
+            Path heatmapPath = Paths.get(UPLOAD_DIR + taskId + "_heatmap.png");
+            if (Files.exists(heatmapPath)) {
+                byte[] imageBytes = Files.readAllBytes(heatmapPath);
                 return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(imageBytes);
             } else {
                 return ResponseEntity.notFound().build();

@@ -18,15 +18,16 @@ export default function Dropzone({ onUpload, compact = false }) {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onUpload(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      Array.from(e.dataTransfer.files).forEach(file => onUpload(file));
     }
   };
 
   const handleChange = (e) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      onUpload(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      Array.from(e.target.files).forEach(file => onUpload(file));
+      e.target.value = ''; // Reset to allow selecting the same file again
     }
   };
 
@@ -42,6 +43,7 @@ export default function Dropzone({ onUpload, compact = false }) {
       >
         <input 
           type="file" 
+          multiple
           accept=".tiff,.tif" 
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
           onChange={handleChange}

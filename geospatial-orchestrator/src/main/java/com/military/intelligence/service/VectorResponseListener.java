@@ -53,7 +53,6 @@ public class VectorResponseListener {
                 "name", "HNSW Greedy Search Graph Routing",
                 "desc", "Traversing O(log N) superhighways to find vector neighborhood"
             ));
-            Thread.sleep(300);
 
             // Format vector to string "[0.1, 0.2, ...]" for pgvector CAST
             String vectorString = "[" + payload.getVector().stream()
@@ -109,7 +108,6 @@ public class VectorResponseListener {
                 "name", "PostgreSQL Vector Cosine Distance",
                 "desc", "Computing exact spatial distance using native pgvector ops"
             ));
-            Thread.sleep(300);
 
             List<SearchResult> results = new ArrayList<>();
             for (Object[] row : rows) {
@@ -131,62 +129,29 @@ public class VectorResponseListener {
                 
                 String explanation = generateExplanation(searchMode, vitScore, ndviScore, ndwiScore, brightnessScore);
                 
-                results.add(new SearchResult(filename, lat, lon, displayScore, tClass, ndvi, ndwi, brightness,
-                                             vitScore, ndviScore, ndwiScore, brightnessScore, hybridScore, explanation));
+                SearchResult searchResult = new SearchResult(filename, lat, lon, displayScore, tClass, ndvi, ndwi, brightness,
+                                             vitScore, ndviScore, ndwiScore, brightnessScore, hybridScore, explanation);
+                
+                // Parse precomputed target polygon directly from database column (13th column)
+                if (row.length > 12 && row[12] != null) {
+                    String targetPolygonStr = (String) row[12];
+                    if (!targetPolygonStr.trim().isEmpty()) {
+                        try {
+                            List<List<Double>> targetPolygon = objectMapper.readValue(
+                                targetPolygonStr,
+                                new com.fasterxml.jackson.core.type.TypeReference<List<List<Double>>>() {}
+                            );
+                            searchResult.setTargetPolygon(targetPolygon);
+                        } catch (Exception e) {
+                            log.error("Failed to parse target polygon JSON for filename: {}", filename, e);
+                        }
+                    }
+                }
+                
+                results.add(searchResult);
             }
             
             java.util.Map<String, Object> queryStats = new java.util.HashMap<>();
-            
-            // --- CONTOUR EXTRACTION (High-Fidelity Targeting) ---
-            try {
-                // Emit Polygon Extraction step
-                sseRegistry.sendEvent(payload.getTaskId(), java.util.Map.of(
-                    "taskId", payload.getTaskId().toString(),
-                    "status", "SEMANTIC_EXTRACTION",
-                    "name", "High-Fidelity Polygon Extraction",
-                    "desc", "Running OpenCV Edge Detection on Top 5 Targets"
-                ));
-                
-                List<java.util.Map<String, Object>> scriptInput = new ArrayList<>();
-                for (SearchResult res : results) {
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
-                    map.put("category", res.getTerrainClass());
-                    map.put("filename", res.getFilename());
-                    map.put("lat", res.getLatitude());
-                    map.put("lon", res.getLongitude());
-                    scriptInput.add(map);
-                }
-                String jsonInput = objectMapper.writeValueAsString(scriptInput);
-                
-                ProcessBuilder pb = new ProcessBuilder("/Users/aaravsingh/Desktop/GROSPATIAL MODEL/ai-worker-env/bin/python", 
-                                                       "/Users/aaravsingh/Desktop/GROSPATIAL MODEL/ai-worker/extract_polygon.py");
-                Process process = pb.start();
-                java.io.OutputStream os = process.getOutputStream();
-                os.write(jsonInput.getBytes());
-                os.flush();
-                os.close();
-                
-                String jsonOutput = new String(process.getInputStream().readAllBytes());
-                process.waitFor();
-                
-                com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(jsonOutput);
-                for (int i = 0; i < rootNode.size() && i < results.size(); i++) {
-                    com.fasterxml.jackson.databind.JsonNode resNode = rootNode.get(i);
-                    com.fasterxml.jackson.databind.JsonNode polyNode = resNode.get("targetPolygon");
-                    if (polyNode != null && polyNode.isArray()) {
-                        List<List<Double>> targetPolygon = new ArrayList<>();
-                        for (com.fasterxml.jackson.databind.JsonNode ptNode : polyNode) {
-                            List<Double> pt = new ArrayList<>();
-                            pt.add(ptNode.get(0).asDouble());
-                            pt.add(ptNode.get(1).asDouble());
-                            targetPolygon.add(pt);
-                        }
-                        results.get(i).setTargetPolygon(targetPolygon);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Failed to extract polygons via python script", e);
-            }
             
             queryStats.put("ndvi", payload.getNdvi());
             queryStats.put("ndwi", payload.getNdwi());
@@ -196,6 +161,7 @@ public class VectorResponseListener {
             queryStats.put("ndviWeight", ndviWeight);
             queryStats.put("ndwiWeight", ndwiWeight);
             queryStats.put("brightnessWeight", brightnessWeight);
+            queryStats.put("hasHeatmap", payload.getHasHeatmap() != null ? payload.getHasHeatmap() : false);
 
             long completedAt = System.currentTimeMillis();
             long queuedAt = filters != null && filters.containsKey("queuedAt") ? Long.parseLong(filters.get("queuedAt").toString()) : completedAt;

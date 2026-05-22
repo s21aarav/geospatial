@@ -14,7 +14,7 @@
 @layer base {
   :root {
     --tactical-dark: #f5f5f5;
-    --tactical-panel: #ffffff;
+    --tactical-panel: rgba(255, 255, 255, 0.7);
     --tactical-accent: #000000;
     --tactical-success: #16a34a;
     --tactical-warning: #ca8a04;
@@ -22,31 +22,76 @@
     --tactical-text: #171717;
     --tactical-muted: #737373;
     --bg-grid-color: rgba(0, 0, 0, 0.05);
+    
+    /* Light Mode Space Background */
+    --space-bg: radial-gradient(circle at center, #f5f5fa 0%, #e0e0ea 100%);
+    --stars-svg-1: url('data:image/svg+xml;utf8,<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="0.8" fill="black" opacity="0.5"/><circle cx="50" cy="150" r="1.2" fill="black" opacity="0.3"/><circle cx="150" cy="50" r="0.5" fill="black" opacity="0.2"/><circle cx="180" cy="180" r="1.5" fill="black" opacity="0.6"/><circle cx="120" cy="100" r="0.8" fill="black" opacity="0.3"/></svg>');
+    --stars-svg-2: url('data:image/svg+xml;utf8,<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="80" r="1" fill="black" opacity="0.4"/><circle cx="200" cy="250" r="1.5" fill="black" opacity="0.5"/><circle cx="280" cy="100" r="0.8" fill="black" opacity="0.4"/><circle cx="100" cy="200" r="2" fill="black" opacity="0.6"/></svg>');
+    --stars-svg-3: url('data:image/svg+xml;utf8,<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg"><circle cx="150" cy="150" r="1.5" fill="black" opacity="0.5"/><circle cx="350" cy="350" r="2.5" fill="black" opacity="0.7"/><circle cx="50" cy="300" r="1" fill="black" opacity="0.4"/></svg>');
   }
 
   .dark {
-    --tactical-dark: #0a0a0a;
-    --tactical-panel: #111111;
+    --tactical-dark: #000000;
+    --tactical-panel: rgba(15, 15, 20, 0.5);
     --tactical-accent: #ffffff;
     --tactical-success: #4ade80;
     --tactical-warning: #facc15;
     --tactical-danger: #f87171;
     --tactical-text: #e5e5e5;
-    --tactical-muted: #737373;
-    --bg-grid-color: rgba(255, 255, 255, 0.02);
+    --tactical-muted: #a3a3a3;
+    --bg-grid-color: rgba(255, 255, 255, 0.03);
+    
+    /* Dark Mode Space Background */
+    --space-bg: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
+    --stars-svg-1: url('data:image/svg+xml;utf8,<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="0.8" fill="white" opacity="0.8"/><circle cx="50" cy="150" r="1.2" fill="white" opacity="0.5"/><circle cx="150" cy="50" r="0.5" fill="white" opacity="0.3"/><circle cx="180" cy="180" r="1.5" fill="white" opacity="0.9"/><circle cx="120" cy="100" r="0.8" fill="white" opacity="0.4"/></svg>');
+    --stars-svg-2: url('data:image/svg+xml;utf8,<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="80" r="1" fill="white" opacity="0.7"/><circle cx="200" cy="250" r="1.5" fill="white" opacity="0.8"/><circle cx="280" cy="100" r="0.8" fill="white" opacity="0.6"/><circle cx="100" cy="200" r="2" fill="white" opacity="0.9"/></svg>');
+    --stars-svg-3: url('data:image/svg+xml;utf8,<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg"><circle cx="150" cy="150" r="1.5" fill="white" opacity="0.8"/><circle cx="350" cy="350" r="2.5" fill="white" opacity="1"/><circle cx="50" cy="300" r="1" fill="white" opacity="0.7"/></svg>');
   }
 
   body {
-    @apply bg-tactical-dark text-tactical-text font-sans antialiased overflow-x-hidden transition-colors duration-300;
-    background-image: 
-      linear-gradient(var(--bg-grid-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--bg-grid-color) 1px, transparent 1px);
-    background-size: 40px 40px;
+    @apply text-tactical-text font-sans antialiased overflow-x-hidden transition-colors duration-300;
+    background-color: transparent;
   }
 }
 
+/* --- Animated Starfield Background --- */
+.space-background {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  background: var(--space-bg);
+}
+
+.stars, .stars2, .stars3 {
+  position: absolute;
+  top: -100vh; left: -100vw;
+  width: 300vw; height: 300vh;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.stars {
+  background: transparent var(--stars-svg-1) repeat;
+  animation: moveStars 120s linear infinite;
+}
+
+.stars2 {
+  background: transparent var(--stars-svg-2) repeat;
+  animation: moveStars 180s linear infinite;
+}
+
+.stars3 {
+  background: transparent var(--stars-svg-3) repeat;
+  animation: moveStars 240s linear infinite;
+}
+
+@keyframes moveStars {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(100vw, 100vh, 0); }
+}
+
 .glass-panel {
-  @apply bg-tactical-panel border border-tactical-muted/20 shadow-lg;
+  @apply bg-tactical-panel backdrop-blur-sm border border-white/10 shadow-lg;
 }
 
 /* Scrollbar styles for a mature look */
@@ -63,4 +108,26 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* --- Floating Animations for UI Elements --- */
+@keyframes float {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.float-1 {
+  will-change: transform;
+  animation: float 6s ease-in-out infinite;
+}
+
+.float-2 {
+  will-change: transform;
+  animation: float 7.5s ease-in-out infinite 1s;
+}
+
+.float-3 {
+  will-change: transform;
+  animation: float 5s ease-in-out infinite 2s;
 }

@@ -38,11 +38,11 @@ class IntelligenceControllerTest {
 
     @Test
     void testHybridWeightNormalization() {
-        MockMultipartFile emptyFile = new MockMultipartFile("file", "test.tif", "image/tiff", new byte[0]);
+        MockMultipartFile nonEmptyFile = new MockMultipartFile("file", "test.tif", "image/tiff", "dummy".getBytes());
         
         // Call with weights summing to 2.0 (1.0 + 0.5 + 0.3 + 0.2 = 2.0)
         ResponseEntity<?> response = controller.uploadImage(
-                emptyFile, 5, 0.0, null, "HYBRID", 0.70, 0.15, 0.10, 0.05, null, null, null, null
+                nonEmptyFile, null, 5, 0.0, null, "HYBRID", 1.0, 0.5, 0.3, 0.2, null, null, null, null
         );
         assertEquals(202, response.getStatusCode().value());
         
@@ -64,7 +64,7 @@ class IntelligenceControllerTest {
         MockMultipartFile file = new MockMultipartFile("file", "test.tif", "image/tiff", "dummy".getBytes());
         
         ResponseEntity<?> response = controller.uploadImage(
-                file, 5, 0.0, null, "SPECTRAL_ONLY", 1.0, 0.3, 0.1, 0.1, null, null, null, null
+                file, null, 5, 0.0, null, "SPECTRAL_ONLY", 1.0, 0.3, 0.1, 0.1, null, null, null, null
         );
         
         assertEquals(202, response.getStatusCode().value());

@@ -32,6 +32,9 @@ function App() {
 
   const handleUpload = (file) => {
     const newJobId = Math.random().toString(36).substring(2, 15);
+    const newTaskId = (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) 
+      ? window.crypto.randomUUID() 
+      : Math.random().toString(36).substring(2, 15) + '-' + Math.random().toString(36).substring(2, 15);
     const newJob = {
       id: newJobId,
       filename: file.name,
@@ -39,7 +42,7 @@ function App() {
       params: { topK, threshold, searchMode, vitWeight, ndviWeight, ndwiWeight, brightnessWeight, terrainClass, bounds },
       status: 'UPLOADING',
       visualStatus: 'UPLOADING',
-      taskId: null,
+      taskId: newTaskId,
       events: [],
       results: [],
       queryStats: null,
@@ -81,9 +84,63 @@ function App() {
     applyTheme();
   }, [theme]);
 
+  // Global SSE Subscription for pipeline updates
+  useEffect(() => {
+    const eventSource = new EventSource('http://localhost:8080/api/v1/intelligence/stream');
+
+    eventSource.addEventListener('status', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        console.log("Global SSE Update:", payload);
+
+        const targetTaskId = payload.taskId;
+        if (!targetTaskId) return;
+
+        setJobs(prevJobs => prevJobs.map(j => {
+          if (j.taskId === targetTaskId) {
+            let updates = { status: payload.status };
+
+            if (payload.status !== 'QUEUED' && payload.status !== 'PROCESSING') {
+              updates.events = [...j.events, payload];
+            }
+
+            if (payload.status === 'COMPLETED') {
+              updates.results = payload.results;
+              if (payload.queryStats) {
+                updates.queryStats = payload.queryStats;
+              }
+            } else if (payload.status === 'FAILED' || payload.status === 'ERROR') {
+              updates.status = 'ERROR';
+              updates.visualStatus = 'ERROR';
+              updates.errorMsg = payload.error || 'Unknown error occurred in processing pipeline.';
+            }
+            return { ...j, ...updates };
+          }
+          return j;
+        }));
+      } catch (err) {
+        console.error("Error parsing global SSE data", err);
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      console.warn("Global SSE Connection drop/reconnect event.");
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen p-8 flex flex-col items-center">
-      <header className="mb-12 text-center relative w-full flex justify-between items-center max-w-6xl mx-auto">
+    <>
+      <div className="space-background">
+        <div className="stars"></div>
+        <div className="stars2"></div>
+        <div className="stars3"></div>
+      </div>
+      <div className={`min-h-screen p-8 flex flex-col items-center transition-all duration-300 overflow-x-hidden ${jobs.length > 0 && view !== 'EVALUATION' ? 'pl-24' : ''}`}>
+        <header className="mb-12 text-center relative w-full flex justify-between items-center max-w-6xl mx-auto z-10 glass-panel px-6 py-4 rounded-xl">
         <h1 className="text-2xl font-mono tracking-[0.3em] text-tactical-text uppercase">
           Palantir <span className="text-tactical-muted opacity-50">|</span> Geospatial Search
         </h1>
@@ -107,30 +164,29 @@ function App() {
       </header>
 
       <main className="w-full flex-grow flex flex-col items-center justify-start gap-8 relative z-10">
+        {jobs.length > 0 && view !== 'EVALUATION' && (
+          <JobSidebar 
+             jobs={jobs} 
+             activeJobId={activeJobId} 
+             setActiveJobId={setActiveJobId} 
+             onNewUplink={openNewUplink}
+          />
+        )}
         
         {view === 'EVALUATION' ? (
           <EvaluationDashboard onBack={() => setView('SEARCH')} />
         ) : (
           <div className="w-full flex flex-col md:flex-row gap-8 items-start">
-            {/* Left: Job Sidebar */}
-            {jobs.length > 0 && (
-              <JobSidebar 
-                 jobs={jobs} 
-                 activeJobId={activeJobId} 
-                 setActiveJobId={setActiveJobId} 
-                 onNewUplink={openNewUplink}
-              />
-            )}
 
             {/* Center: Active Job View */}
             <div className="flex-1 w-full min-h-[500px] flex flex-col items-center">
                
                {/* NEW UPLOAD VIEW */}
                <div className={`w-full flex flex-col lg:flex-row gap-8 items-start ${activeJobId === null ? '' : 'hidden'}`}>
-                  <div className="flex-1 w-full mt-4 lg:mt-8">
+                  <div className="flex-1 w-full mt-4 lg:mt-8 float-2">
                       <Dropzone onUpload={handleUpload} />
                   </div>
-                  <div className="glass-panel p-6 w-full lg:w-80 border-tactical-muted/30 shrink-0 mt-4 lg:mt-8">
+                  <div className="glass-panel p-6 w-full lg:w-80 border-tactical-muted/30 shrink-0 mt-4 lg:mt-8 float-1">
                       <h2 className="text-tactical-accent font-mono text-sm tracking-widest mb-4">GLOBAL PARAMETERS</h2>
                       <p className="text-tactical-muted text-[10px] font-mono mb-6 leading-tight">Applied to new uploads.</p>
                 
@@ -248,7 +304,8 @@ function App() {
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </>
   );
 }
 

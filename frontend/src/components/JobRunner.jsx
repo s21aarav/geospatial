@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import ExecutionPipeline from './ExecutionPipeline';
 import MapResults from './MapResults';
@@ -6,15 +6,21 @@ import MapResults from './MapResults';
 const API_BASE = 'http://localhost:8080/api/v1/intelligence';
 
 export default function JobRunner({ job, isActive, updateJob }) {
-  // 1. Handle Upload if no taskId and status is UPLOADING
+  const uploadInitiated = useRef(false);
+
+  // 1. Handle Upload if status is UPLOADING
   useEffect(() => {
-    if (job.status === 'UPLOADING' && !job.taskId && job.file) {
+    if (job.status === 'UPLOADING' && job.file && !uploadInitiated.current) {
+      uploadInitiated.current = true;
       let isMounted = true;
       const doUpload = async () => {
         updateJob(job.id, { events: [{status: 'UPLOADING', name: 'Secure Transfer', desc: 'Transferring raw payload to ingestion node'}] });
         
         const formData = new FormData();
         formData.append('file', job.file);
+        if (job.taskId) {
+            formData.append('taskId', job.taskId);
+        }
         formData.append('topK', job.params.topK);
         formData.append('threshold', job.params.threshold);
         formData.append('searchMode', job.params.searchMode);
@@ -38,7 +44,7 @@ export default function JobRunner({ job, isActive, updateJob }) {
           });
           
           if (response.status === 202 && isMounted) {
-            updateJob(job.id, { taskId: response.data.task_id });
+            // Already has taskId pre-generated and stored in job state
           }
         } catch (err) {
           if (isMounted) {
@@ -53,62 +59,13 @@ export default function JobRunner({ job, isActive, updateJob }) {
       doUpload();
       return () => { isMounted = false; };
     }
-  }, [job.status, job.taskId, job.file, job.id]); // Intentionally omitting job.params to prevent re-uploads
+  }, [job.status, job.file, job.id]); // Intentionally omitting job.params to prevent re-uploads
 
-  // 2. Handle SSE if taskId exists and not completed
-  useEffect(() => {
-    if (!job.taskId || job.status === 'COMPLETED' || job.status === 'ERROR') return;
-
-    let eventSource = new EventSource(`${API_BASE}/stream/${job.taskId}`);
-
-    eventSource.addEventListener('status', (e) => {
-      try {
-        const payload = JSON.parse(e.data);
-        console.log(`SSE Update [${job.id}]:`, payload);
-        
-        updateJob(job.id, (prevJob) => {
-            let updates = { status: payload.status };
-            
-            if (payload.status !== 'QUEUED' && payload.status !== 'PROCESSING') {
-               updates.events = [...prevJob.events, payload];
-            }
-            
-            if (payload.status === 'COMPLETED') {
-              updates.results = payload.results;
-              if (payload.queryStats) {
-                  updates.queryStats = payload.queryStats;
-              }
-            } else if (payload.status === 'FAILED' || payload.status === 'ERROR') {
-              updates.status = 'ERROR';
-              updates.visualStatus = 'ERROR';
-              updates.errorMsg = payload.error || 'Unknown error occurred in processing pipeline.';
-            }
-            return updates;
-        });
-
-        if (payload.status === 'COMPLETED' || payload.status === 'FAILED' || payload.status === 'ERROR') {
-            eventSource.close();
-        }
-      } catch (err) {
-        console.error("Error parsing SSE data", err);
-      }
-    });
-
-    eventSource.onerror = (err) => {
-      console.error("SSE Connection Error", err);
-      updateJob(job.id, {
-        status: 'ERROR',
-        visualStatus: 'ERROR',
-        errorMsg: "Real-time telemetry stream lost connection to orchestrator."
-      });
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  // We omit job.events and other constantly changing fields to prevent reconnecting SSE
-  }, [job.taskId, job.id, updateJob]); // Run once when taskId is available
+  const handleVisualCompletion = useCallback(() => {
+    if (job.visualStatus !== 'COMPLETED') {
+        updateJob(job.id, { visualStatus: 'COMPLETED' });
+    }
+  }, [job.id, job.visualStatus, updateJob]);
 
   return (
     <div className={`w-full flex flex-col items-center ${isActive ? '' : 'hidden'}`}>
@@ -120,21 +77,25 @@ export default function JobRunner({ job, isActive, updateJob }) {
       )}
 
       {job.status !== 'IDLE' && job.status !== 'ERROR' && (
-        <ExecutionPipeline 
-          events={job.events} 
-          currentStatus={job.status} 
-          onVisualCompletion={() => {
-              if (job.visualStatus !== 'COMPLETED') {
-                  updateJob(job.id, { visualStatus: 'COMPLETED' });
-              }
-          }}
-        />
+        <div className="w-full">
+          <ExecutionPipeline 
+              events={job.events} 
+              currentStatus={job.status} 
+              errorMsg={job.errorMsg}
+              onVisualCompletion={handleVisualCompletion} 
+          />
+        </div>
       )}
-
-      {job.visualStatus === 'COMPLETED' && job.status === 'COMPLETED' && (
+      
+      {job.visualStatus === 'COMPLETED' && job.status === 'COMPLETED' && isActive && (
         <div className="w-full flex flex-col items-center animate-fade-in mt-8">
           <div className="w-full border-t border-tactical-muted/20 my-8 mb-4"></div>
-          <MapResults results={job.results} queryStats={job.queryStats} isActive={isActive} />
+          <MapResults 
+              results={job.results} 
+              queryStats={job.queryStats} 
+              isActive={isActive} 
+              taskId={job.taskId}
+          />
         </div>
       )}
     </div>

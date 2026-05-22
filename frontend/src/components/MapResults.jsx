@@ -44,7 +44,7 @@ function MapFixer({ isActive }) {
   return null;
 }
 
-export default function MapResults({ results, queryStats, isActive = true }) {
+export default function MapResults({ results, queryStats, isActive = true, taskId }) {
   const [activeCenter, setActiveCenter] = useState(null);
   const [mapStyle, setMapStyle] = useState('dark');
 
@@ -81,10 +81,14 @@ export default function MapResults({ results, queryStats, isActive = true }) {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 mt-4 bg-tactical-dark border border-tactical-muted/20">
-      <div className="flex justify-between items-end mb-6 border-b border-tactical-muted/30 pb-2">
-        <h2 className="text-sm tracking-widest font-mono text-tactical-muted flex items-center uppercase">
-          <Target className="mr-2 w-4 h-4" />
-          Geospatial Matches (Top 5)
+      <div className="flex justify-between items-end mb-6 border-b border-tactical-muted/30 pb-2 flex-wrap gap-2">
+        <h2 className="text-sm tracking-widest font-mono text-tactical-muted flex items-center uppercase flex-wrap gap-x-4">
+          <span className="flex items-center"><Target className="mr-2 w-4 h-4" /> Geospatial Matches (Top 5)</span>
+          {queryStats?.taskMetrics?.totalTimeMs && (
+            <span className="text-[10px] text-tactical-success font-bold font-mono tracking-normal bg-tactical-success/15 px-2.5 py-0.5 border border-tactical-success/30 rounded-sm uppercase">
+              Latency: {queryStats.taskMetrics.totalTimeMs}ms
+            </span>
+          )}
         </h2>
         <select 
             value={mapStyle}
@@ -142,7 +146,7 @@ export default function MapResults({ results, queryStats, isActive = true }) {
             <div 
               key={idx} 
               onClick={() => setActiveCenter([res.latitude, res.longitude])}
-              className="bg-tactical-panel border border-tactical-muted/20 p-3 hover:border-tactical-muted/50 transition-colors flex flex-col gap-3 cursor-pointer"
+              className="bg-tactical-panel backdrop-blur-sm border border-tactical-muted/20 p-3 hover:border-tactical-muted/50 transition-colors flex flex-col gap-3 cursor-pointer"
             >
               <div className="flex justify-between items-center border-b border-tactical-muted/20 pb-2">
                 <span className="font-mono font-bold text-tactical-text text-xs">#{idx + 1} - {res.terrainClass}</span>
@@ -179,6 +183,7 @@ export default function MapResults({ results, queryStats, isActive = true }) {
       <ExplainabilityPanel 
           result={results.find(r => r.latitude === activeCenter[0] && r.longitude === activeCenter[1]) || results[0]} 
           queryStats={queryStats} 
+          taskId={taskId}
       />
     </div>
   );

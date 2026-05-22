@@ -11,6 +11,7 @@ public class VectorResponsePayload {
     private float brightness;
     private Long dispatchedAt;
     private Long embeddingCompletedAt;
+    private Boolean hasHeatmap;
 
     public UUID getTaskId() { return taskId; }
     public void setTaskId(UUID taskId) { this.taskId = taskId; }
@@ -32,4 +33,7 @@ public class VectorResponsePayload {
     
     public Long getEmbeddingCompletedAt() { return embeddingCompletedAt; }
     public void setEmbeddingCompletedAt(Long embeddingCompletedAt) { this.embeddingCompletedAt = embeddingCompletedAt; }
+    
+    public Boolean getHasHeatmap() { return hasHeatmap; }
+    public void setHasHeatmap(Boolean hasHeatmap) { this.hasHeatmap = hasHeatmap; }
 }

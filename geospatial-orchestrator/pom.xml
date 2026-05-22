@@ -84,6 +84,9 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>-Xms128m -Xmx256m -XX:+UseG1GC</jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
