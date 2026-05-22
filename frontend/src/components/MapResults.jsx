@@ -19,8 +19,46 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-export default function MapResults({ results, queryStats }) {
+function MapFixer({ isActive }) {
+  const map = useMap();
+  useEffect(() => {
+    if (isActive) {
+      // Give the browser a frame to apply display:block before calculating map size
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, map]);
+  return null;
+}
+
+export default function MapResults({ results, queryStats, isActive = true }) {
   const [activeCenter, setActiveCenter] = useState(null);
+  const [mapStyle, setMapStyle] = useState('dark');
+
+  const MAP_STYLES = {
+    dark: {
+      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    light: {
+      url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    },
+    satellite: {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    },
+    street: {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    },
+    terrain: {
+      url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+      attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+    }
+  };
 
   useEffect(() => {
     if (results && results.length > 0) {
@@ -32,18 +70,32 @@ export default function MapResults({ results, queryStats }) {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 mt-4 bg-tactical-dark border border-tactical-muted/20">
-      <h2 className="text-sm tracking-widest font-mono text-tactical-muted mb-6 border-b border-tactical-muted/30 pb-2 flex items-center uppercase">
-        <Target className="mr-2 w-4 h-4" />
-        Geospatial Matches (Top 5)
-      </h2>
+      <div className="flex justify-between items-end mb-6 border-b border-tactical-muted/30 pb-2">
+        <h2 className="text-sm tracking-widest font-mono text-tactical-muted flex items-center uppercase">
+          <Target className="mr-2 w-4 h-4" />
+          Geospatial Matches (Top 5)
+        </h2>
+        <select 
+            value={mapStyle}
+            onChange={(e) => setMapStyle(e.target.value)}
+            className="bg-tactical-bg text-tactical-text border border-tactical-muted/30 font-mono text-[10px] p-1.5 focus:outline-none focus:border-tactical-accent"
+        >
+            <option value="dark">DARK MAP</option>
+            <option value="satellite">SATELLITE</option>
+            <option value="street">STREET MAP</option>
+            <option value="light">LIGHT MAP</option>
+            <option value="terrain">TERRAIN</option>
+        </select>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="w-full lg:w-3/4 h-[600px] border border-tactical-muted/30 relative z-0 bg-black">
           <MapContainer center={activeCenter} zoom={15} style={{ height: '100%', width: '100%' }}>
-            {/* Using a dark themed map tile */}
+            {/* Dynamic Map Tile Layer */}
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              key={mapStyle} // Forces re-render when switching providers to prevent ghost tiles
+              url={MAP_STYLES[mapStyle].url}
+              attribution={MAP_STYLES[mapStyle].attribution}
             />
             {results.map((res, idx) => (
               <Marker key={idx} position={[res.latitude, res.longitude]}>
@@ -65,6 +117,7 @@ export default function MapResults({ results, queryStats }) {
               </Marker>
             ))}
             <ChangeView center={activeCenter} zoom={15} />
+            <MapFixer isActive={isActive} />
           </MapContainer>
         </div>
 

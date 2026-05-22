@@ -41,7 +41,6 @@ def publish_status(ch, task_id, status_code, status_name, desc):
         routing_key=STATUS_ROUTING_KEY,
         body=json.dumps(payload)
     )
-    time.sleep(0.3) # Artificial delay for mature execution log visual
 
 def preprocess_tiff(file_path: str, ch, task_id):
     logger.info(f"Preprocessing file: {file_path}")

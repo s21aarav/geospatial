@@ -1,22 +1,46 @@
 @import "tailwindcss";
 
 @theme {
-  --color-tactical-dark: #0a0a0a;
-  --color-tactical-panel: #111111;
-  --color-tactical-accent: #ffffff;
-  --color-tactical-success: #4ade80;
-  --color-tactical-warning: #facc15;
-  --color-tactical-danger: #f87171;
-  --color-tactical-text: #e5e5e5;
-  --color-tactical-muted: #737373;
+  --color-tactical-dark: var(--tactical-dark);
+  --color-tactical-panel: var(--tactical-panel);
+  --color-tactical-accent: var(--tactical-accent);
+  --color-tactical-success: var(--tactical-success);
+  --color-tactical-warning: var(--tactical-warning);
+  --color-tactical-danger: var(--tactical-danger);
+  --color-tactical-text: var(--tactical-text);
+  --color-tactical-muted: var(--tactical-muted);
 }
 
 @layer base {
+  :root {
+    --tactical-dark: #f5f5f5;
+    --tactical-panel: #ffffff;
+    --tactical-accent: #000000;
+    --tactical-success: #16a34a;
+    --tactical-warning: #ca8a04;
+    --tactical-danger: #dc2626;
+    --tactical-text: #171717;
+    --tactical-muted: #737373;
+    --bg-grid-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .dark {
+    --tactical-dark: #0a0a0a;
+    --tactical-panel: #111111;
+    --tactical-accent: #ffffff;
+    --tactical-success: #4ade80;
+    --tactical-warning: #facc15;
+    --tactical-danger: #f87171;
+    --tactical-text: #e5e5e5;
+    --tactical-muted: #737373;
+    --bg-grid-color: rgba(255, 255, 255, 0.02);
+  }
+
   body {
-    @apply bg-tactical-dark text-tactical-text font-sans antialiased overflow-x-hidden;
+    @apply bg-tactical-dark text-tactical-text font-sans antialiased overflow-x-hidden transition-colors duration-300;
     background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      linear-gradient(var(--bg-grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid-color) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 }
