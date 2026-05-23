@@ -94,20 +94,20 @@
   @apply bg-tactical-panel shadow-lg rounded-xl;
 }
 
-/* Scrollbar styles for a mature look */
+/* Scrollbar hidden for maximum sleekness, but scrolling still works */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+
+/* Force Leaflet canvas to be transparent to prevent white flashing edges */
+.leaflet-container {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
 }
 
 /* --- Floating Animations for UI Elements --- */
