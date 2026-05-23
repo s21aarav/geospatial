@@ -83,7 +83,7 @@ export default function MapResults({ results, queryStats, isActive = true, taskI
     <div className="w-full max-w-6xl mx-auto p-4 mt-4 bg-black/10 rounded-xl shadow-2xl">
       <div className="flex justify-between items-end mb-6 pb-2 flex-wrap gap-2">
         <h2 className="text-sm tracking-widest font-mono text-tactical-muted flex items-center uppercase flex-wrap gap-x-4">
-          <span className="flex items-center"><Target className="mr-2 w-4 h-4" /> Geospatial Matches (Top 5)</span>
+          <span className="flex items-center"><Target className="mr-2 w-4 h-4" /> Geospatial Matches (Top {results.length})</span>
           {queryStats?.taskMetrics?.totalTimeMs && (
             <span className="text-[10px] text-tactical-success font-bold font-mono tracking-normal bg-tactical-success/15 px-2.5 py-0.5 border border-tactical-success/30 rounded-sm uppercase">
               Latency: {queryStats.taskMetrics.totalTimeMs}ms
