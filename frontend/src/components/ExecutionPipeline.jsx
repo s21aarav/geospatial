@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Terminal } from 'lucide-react';
+import { Terminal, CheckCircle2, CircleDashed, Loader2, AlertCircle } from 'lucide-react';
 
 const pipelineSchema = [
   { id: 'UPLOADING', name: 'SECURE_TRANSFER', fakeLogs: ['Initializing TLS tunnel...', 'Handshake OK', 'Transmitting payload...', 'Checksum verified: 0x8F9A'] },
@@ -20,12 +20,14 @@ const pipelineSchema = [
 
 export default function ExecutionPipeline({ events, currentStatus, onVisualCompletion, startTime, endTime }) {
   const terminalRef = useRef(null);
+  const leftPaneRef = useRef(null);
   
   const [displayIndex, setDisplayIndex] = useState(0);
   const [logs, setLogs] = useState([]);
+  const [selectedStep, setSelectedStep] = useState(null);
   
   useEffect(() => {
-    if (events.length === 1 || events.length === 0) {
+    if (events.length <= 1) {
       setDisplayIndex(0);
       setLogs([]);
     }
@@ -54,7 +56,7 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
   }, [visualStatus, onVisualCompletion]);
 
   useEffect(() => {
-    if (visualStatus === 'COMPLETED') return;
+    if (visualStatus === 'COMPLETED' || visualStatus === 'ERROR') return;
 
     let logCounter = 0;
     const fakeLogGenerator = setInterval(() => {
@@ -63,77 +65,173 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
       
       const stepFakeLogs = currentStep.fakeLogs;
       
-      let newLine = "";
+      let message = "";
+      let level = "INFO";
       if (logCounter < stepFakeLogs.length) {
-        newLine = `[${timeStr}] [${currentStep.name}] ${stepFakeLogs[logCounter]}`;
+        message = stepFakeLogs[logCounter];
       } else {
         const hex = Math.floor(Math.random()*16777215).toString(16).toUpperCase().padStart(6, '0');
-        newLine = `[${timeStr}] [${currentStep.name}] MEM_DUMP 0x${hex} OK`;
+        message = `MEM_DUMP 0x${hex} VERIFIED`;
+        level = "TRACE";
       }
       
-      setLogs(prev => [...prev, newLine]);
+      const newLog = {
+        time: timeStr,
+        stepId: currentStep.id,
+        stepName: currentStep.name,
+        level: level,
+        message: message
+      };
+      
+      setLogs(prev => [...prev, newLog]);
       logCounter++;
       
-      if (terminalRef.current) {
-        terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-      }
-    }, 15); // Log generation every 15ms to make it look extremely dense and fast
+    }, 35);
 
     return () => clearInterval(fakeLogGenerator);
   }, [currentStep, visualStatus]);
+  
+  useEffect(() => {
+     if (terminalRef.current) {
+        terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+     }
+  }, [logs, selectedStep]);
 
   useEffect(() => {
     if (visualStatus === 'ERROR') {
-      setLogs(prev => [...prev, `[CRITICAL_FAILURE] Execution halted due to systemic anomaly.`]);
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+      setLogs(prev => [...prev, { time: timeStr, stepId: currentStep.id, stepName: currentStep.name, level: "FATAL", message: "Execution halted due to systemic anomaly." }]);
     }
-  }, [visualStatus]);
+  }, [visualStatus, currentStep]);
+
+  useEffect(() => {
+      if (leftPaneRef.current && activeIndex >= 0) {
+          const activeEl = leftPaneRef.current.children[activeIndex];
+          if (activeEl) {
+              activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+      }
+  }, [activeIndex]);
+
+  const filteredLogs = selectedStep ? logs.filter(l => l.stepId === selectedStep) : logs;
 
   return (
-    <div className="w-full max-w-4xl mx-auto rounded flex flex-col h-[500px] border border-tactical-accent/30 bg-[#050505] font-mono relative overflow-hidden shadow-2xl">
+    <div className="w-full max-w-5xl mx-auto rounded-lg flex flex-col h-[550px] border border-tactical-accent/40 bg-[#050505] font-mono relative overflow-hidden shadow-2xl">
       
-      <div className="flex justify-between items-center bg-[#111] px-4 py-3 border-b border-tactical-accent/20 z-10">
+      <div className="flex justify-between items-center bg-[#0a0a0a] px-4 py-3 border-b border-tactical-accent/30 z-10">
         <div className="flex gap-2 items-center">
           <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
           <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
           <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
-          <span className="text-tactical-muted text-[10px] ml-4 tracking-widest uppercase flex items-center">
-             <Terminal className="w-3 h-3 mr-2" /> root@palantir-ingest-node
+          <span className="text-tactical-muted text-[11px] ml-4 tracking-widest uppercase flex items-center">
+             <Terminal className="w-4 h-4 mr-2 text-tactical-accent" /> palantir-ingest-node
           </span>
         </div>
         <div className="flex gap-4 items-center">
           {endTime && startTime && (
-            <span className="text-tactical-muted text-[10px] tracking-widest uppercase">
+            <span className="text-tactical-muted text-[11px] tracking-widest uppercase border border-tactical-accent/30 px-2 py-0.5 rounded">
               LATENCY: {(endTime - startTime)}ms
             </span>
           )}
-          <span className={`text-[10px] tracking-widest px-2 py-0.5 font-bold ${visualStatus === 'ERROR' ? 'bg-tactical-danger text-black' : visualStatus === 'COMPLETED' ? 'bg-tactical-success text-black' : 'text-[#27c93f] animate-pulse'}`}>
+          <span className={`text-[10px] tracking-widest px-3 py-1 rounded font-bold ${visualStatus === 'ERROR' ? 'bg-tactical-danger text-black' : visualStatus === 'COMPLETED' ? 'bg-tactical-success text-black shadow-[0_0_10px_#27c93f]' : 'bg-[#111] border border-[#27c93f] text-[#27c93f] animate-pulse'}`}>
             {visualStatus === 'ERROR' ? 'CRITICAL FAILURE' : visualStatus === 'COMPLETED' ? 'EXECUTION TERMINATED' : 'ACTIVE THREAD'}
           </span>
         </div>
       </div>
 
-      <div 
-        ref={terminalRef}
-        className="flex-grow p-5 overflow-y-auto text-[11px] leading-loose text-[#27c93f]/90 z-10"
-        style={{ textShadow: "0 0 5px rgba(39, 201, 63, 0.4)" }}
-      >
-        <div className="mb-4 opacity-50">
-           Palantir OS v11.4.2 [Kernel Darwin 21.6.0]<br/>
-           Establishing secure uplink to High-Speed Event Bus... OK.<br/>
-           Awaiting payload...<br/>
-           <br/>
+      <div className="flex flex-row flex-grow overflow-hidden z-10">
+        
+        <div ref={leftPaneRef} className="w-[35%] bg-[#0a0a0a] border-r border-tactical-accent/20 overflow-y-auto p-4 space-y-2 relative" style={{ scrollbarWidth: 'none' }}>
+            {pipelineSchema.map((step, idx) => {
+                const isCompleted = idx < activeIndex || visualStatus === 'COMPLETED';
+                const isActive = idx === activeIndex && visualStatus === 'PROCESSING';
+                const isPending = idx > activeIndex;
+                const isError = idx === activeIndex && visualStatus === 'ERROR';
+                const isSelected = selectedStep === step.id;
+
+                let stateClass = "text-tactical-muted border-transparent opacity-60";
+                if (isActive) stateClass = "text-[#27c93f] border-[#27c93f]/40 bg-[#27c93f]/5 shadow-[0_0_15px_rgba(39,201,63,0.1)]";
+                if (isCompleted) stateClass = "text-[#27c93f]/70 border-tactical-accent/20 hover:bg-tactical-accent/10";
+                if (isError) stateClass = "text-tactical-danger border-tactical-danger/40 bg-tactical-danger/10 shadow-[0_0_15px_rgba(255,0,0,0.2)]";
+
+                return (
+                    <div 
+                        key={step.id}
+                        onClick={() => setSelectedStep(isSelected ? null : step.id)}
+                        className={`p-3 rounded-md border flex items-center cursor-pointer transition-all duration-300 ${stateClass} ${isSelected ? 'ring-1 ring-tactical-accent bg-tactical-accent/10' : ''}`}
+                    >
+                        <div className="mr-3 flex-shrink-0">
+                            {isCompleted && !isError && <CheckCircle2 className="w-5 h-5 text-tactical-success" />}
+                            {isActive && <Loader2 className="w-5 h-5 text-[#27c93f] animate-spin" />}
+                            {isError && <AlertCircle className="w-5 h-5 text-tactical-danger" />}
+                            {isPending && <CircleDashed className="w-5 h-5 opacity-40" />}
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className={`text-[10px] uppercase font-bold tracking-wider truncate ${isActive ? 'text-white' : ''}`}>
+                                {step.name.replace(/_/g, ' ')}
+                            </span>
+                            {isActive && <span className="text-[9px] text-[#27c93f]/70 mt-1 uppercase">Processing...</span>}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
-        {logs.map((log, i) => (
-          <div key={i} className="mb-0.5">
-            {log}
-          </div>
-        ))}
-        {visualStatus === 'PROCESSING' && (
-          <div className="mt-2 animate-pulse w-2 h-4 bg-[#27c93f]"></div>
-        )}
+
+        <div className="w-[65%] relative bg-[#030303] flex flex-col">
+            {selectedStep && (
+                <div className="absolute top-0 left-0 right-0 bg-[#0a0a0a] border-b border-tactical-accent/20 px-4 py-2 flex justify-between items-center text-[10px] z-20">
+                    <span className="text-tactical-accent uppercase tracking-wider">Filtered View: {selectedStep}</span>
+                    <button onClick={() => setSelectedStep(null)} className="text-tactical-muted hover:text-white transition-colors">Clear Filter ✕</button>
+                </div>
+            )}
+            
+            <div 
+                ref={terminalRef}
+                className={`flex-grow p-5 overflow-y-auto text-[12px] leading-relaxed z-10 ${selectedStep ? 'mt-8' : ''}`}
+                style={{ scrollBehavior: 'smooth' }}
+            >
+                {!selectedStep && (
+                    <div className="mb-6 opacity-60 text-tactical-muted">
+                    # Palantir OS v11.4.2 [Kernel Darwin 21.6.0]<br/>
+                    # Establishing secure uplink to High-Speed Event Bus... OK.<br/>
+                    # Runtime initialized. Awaiting payload...<br/>
+                    <br/>
+                    </div>
+                )}
+
+                {filteredLogs.map((log, i) => {
+                    let levelColor = "text-tactical-accent"; // INFO
+                    if (log.level === 'TRACE') levelColor = "text-tactical-muted";
+                    if (log.level === 'WARN') levelColor = "text-[#ffbd2e]";
+                    if (log.level === 'FATAL') levelColor = "text-[#ff5f56]";
+
+                    return (
+                        <div key={i} className="mb-1 font-mono flex hover:bg-white/5 transition-colors duration-150 px-1 py-0.5 rounded">
+                            <span className="text-tactical-muted/50 mr-3 shrink-0">[{log.time}]</span>
+                            <span className={`${levelColor} font-bold mr-3 shrink-0 w-12`}>[{log.level}]</span>
+                            <span className="text-white/40 mr-3 shrink-0 hidden md:inline">[{log.stepName}]</span>
+                            <span className={`text-white/90 break-all ${log.level === 'FATAL' ? 'text-tactical-danger font-bold' : ''}`}>
+                                {log.message}
+                            </span>
+                        </div>
+                    );
+                })}
+                {visualStatus === 'PROCESSING' && !selectedStep && (
+                    <div className="mt-2 animate-pulse w-2 h-4 bg-tactical-accent"></div>
+                )}
+                {filteredLogs.length === 0 && selectedStep && (
+                    <div className="flex h-full items-center justify-center opacity-40 italic text-tactical-muted">
+                        No logs recorded for this stage yet.
+                    </div>
+                )}
+            </div>
+
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.4)_50%)] bg-[length:100%_4px] z-20 opacity-20"></div>
+        </div>
+
       </div>
 
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-20 opacity-30"></div>
     </div>
   );
 }
