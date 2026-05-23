@@ -11,13 +11,14 @@ import torch.nn.functional as F
 import rasterio
 from PIL import Image
 from transformers import AutoModel
+import psycopg2
+import psycopg2.extras
 
 # Configuration
 DATA_DIR = os.getenv("DATA_DIR", "./data")
 ZIP_PATH = os.getenv("ZIP_PATH", "./EuroSAT_MS.zip")
 EXTRACT_DIR = os.path.join(DATA_DIR, "eurosat")
 WEB_DIR = os.path.join(EXTRACT_DIR, "web")
-SQL_PATH = os.path.join(DATA_DIR, "seed_eurosat.sql")
 BATCH_SIZE = 64
 
 # EuroSAT 10 Classes with generic European base coordinates
@@ -124,7 +125,7 @@ def create_png_thumbnail(norm_arr, out_path):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     img.save(out_path, format="PNG")
 
-def process_batch(model, device, tensors, file_paths, categories, norm_arrays, ndvis, ndwis, brightnesses, sql_statements):
+def process_batch(model, device, tensors, file_paths, categories, norm_arrays, ndvis, ndwis, brightnesses, data_rows):
     tensors = tensors.to(device)
     
     with torch.no_grad():
@@ -163,11 +164,10 @@ def process_batch(model, device, tensors, file_paths, categories, norm_arrays, n
         jitter_lat = base_lat + np.random.uniform(-0.005, 0.005)
         jitter_lon = base_lon + np.random.uniform(-0.005, 0.005)
         
-        record_id = uuid.uuid4()
+        record_id = str(uuid.uuid4())
         vector_str = "[" + ",".join(map(str, vector)) + "]"
         
-        sql = f"INSERT INTO tactical_terrain (id, filename, latitude, longitude, terrain_class, ndvi, ndwi, brightness, embedding) VALUES ('{record_id}', '{relative_db_path}', {jitter_lat}, {jitter_lon}, '{category}', {ndvi_val}, {ndwi_val}, {brightness_val}, '{vector_str}');\n"
-        sql_statements.append(sql)
+        data_rows.append((record_id, relative_db_path, jitter_lat, jitter_lon, category, ndvi_val, ndwi_val, brightness_val, vector_str))
 
 def main():
     if not os.path.exists(ZIP_PATH) and not os.path.exists(EXTRACT_DIR):
@@ -195,7 +195,7 @@ def main():
 
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     
-    sql_statements = ["-- Seeding EuroSAT Dataset\n", "BEGIN;\n", "DELETE FROM tactical_terrain;\n"]
+    data_rows = []
     
     start_time = time.time()
     processed = 0
@@ -205,7 +205,7 @@ def main():
     sys.stdout.flush()
     
     for batch_idx, (tensors, file_paths, categories, norm_arrays, ndvis, ndwis, brightnesses) in enumerate(dataloader):
-        process_batch(model, device, tensors, file_paths, categories, norm_arrays, ndvis, ndwis, brightnesses, sql_statements)
+        process_batch(model, device, tensors, file_paths, categories, norm_arrays, ndvis, ndwis, brightnesses, data_rows)
         processed += len(file_paths)
         if processed % (BATCH_SIZE * 5) == 0 or processed == total:
             elapsed = time.time() - start_time
@@ -213,22 +213,25 @@ def main():
             print(f"Processed {processed}/{total} images. ({rate:.2f} images/sec)")
             sys.stdout.flush()
             
-    # Write SQL
-    print(f"Writing SQL seed script to {SQL_PATH}...")
-    sql_statements.append("COMMIT;\n")
-    with open(SQL_PATH, 'w') as f:
-        f.writelines(sql_statements)
-        
-    # Execute SQL
-    print("Injecting SQL seed script into PostgreSQL...")
+    print(f"Injecting {len(data_rows)} records into PostgreSQL via psycopg2...")
     try:
-        result = subprocess.run(["psql", "-d", "postgres", "-f", SQL_PATH], capture_output=True, text=True)
-        if result.returncode == 0:
-            print("Successfully populated tactical_terrain table with EuroSAT!")
-        else:
-            print(f"Error executing SQL script: {result.stderr}")
+        conn = psycopg2.connect(os.environ.get('POSTGRES_URL', "dbname=postgres"))
+        cur = conn.cursor()
+        cur.execute("DELETE FROM tactical_terrain;")
+        
+        insert_query = """
+            INSERT INTO tactical_terrain 
+            (id, filename, latitude, longitude, terrain_class, ndvi, ndwi, brightness, embedding) 
+            VALUES %s;
+        """
+        psycopg2.extras.execute_values(cur, insert_query, data_rows, page_size=1000)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("Successfully populated tactical_terrain table with EuroSAT!")
     except Exception as e:
-        print(f"Subprocess run failed: {str(e)}")
+        print(f"Database insertion failed: {str(e)}")
 
     print(f"Total time elapsed: {time.time() - start_time:.2f} seconds.")
 

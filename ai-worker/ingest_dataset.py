@@ -10,6 +10,8 @@ import torch
 import rasterio
 from PIL import Image
 from transformers import AutoModel
+import psycopg2
+import psycopg2.extras
 
 # Configuration
 DATA_DIR = os.getenv("DATA_DIR", "./data")
@@ -17,7 +19,6 @@ ZIP_URL = "http://weegee.vision.ucmerced.edu/datasets/UCMerced_LandUse.zip"
 ZIP_PATH = os.path.join(DATA_DIR, "UCMerced_LandUse.zip")
 EXTRACT_DIR = os.path.join(DATA_DIR, "ucmerced")
 WEB_DIR = os.path.join(DATA_DIR, "ucmerced", "web")
-SQL_PATH = os.path.join(DATA_DIR, "seed_data.sql")
 
 # 21 UC Merced Classes with tactical base coordinates (Bay Area & Yosemite focus)
 CLASS_COORDINATES = {
@@ -206,7 +207,7 @@ def process_and_seed():
     
     print(f"Found {len(categories)} categories: {categories}")
     
-    sql_statements = ["-- Seeding Tactical Terrain Dataset\n", "BEGIN;\n", "DELETE FROM tactical_terrain;\n"]
+    data_rows = []
     
     processed_count = 0
     
@@ -256,34 +257,35 @@ def process_and_seed():
             jitter_lat = base_lat + random.uniform(-0.006, 0.006)
             jitter_lon = base_lon + random.uniform(-0.006, 0.006)
             
-            # 4. Generate SQL statement
-            record_id = uuid.uuid4()
+            # 4. Save to data_rows
+            record_id = str(uuid.uuid4())
             vector_str = "[" + ",".join(map(str, vector)) + "]"
             
-            sql = f"INSERT INTO tactical_terrain (id, filename, latitude, longitude, embedding) VALUES ('{record_id}', '{relative_db_path}', {jitter_lat}, {jitter_lon}, '{vector_str}');\n"
-            sql_statements.append(sql)
+            data_rows.append((record_id, relative_db_path, jitter_lat, jitter_lon, vector_str))
             
             processed_count += 1
             if processed_count % 100 == 0:
                 print(f"Generated embeddings and PNGs for {processed_count} images.")
                 
-    # Write to seed_data.sql
-    print(f"Writing SQL seed script containing {processed_count} entries to {SQL_PATH}...")
-    sql_statements.append("COMMIT;\n")
-    with open(SQL_PATH, 'w') as f:
-        f.writelines(sql_statements)
-        
-    # Execute SQL script in postgres
-    print("Injecting SQL seed script into PostgreSQL...")
+    print(f"Injecting {processed_count} entries into PostgreSQL via psycopg2...")
     try:
-        result = subprocess.run(["psql", "-d", "postgres", "-f", SQL_PATH], capture_output=True, text=True)
-        if result.returncode == 0:
-            print("Successfully populated tactical_terrain table!")
-            print(result.stdout.strip().split('\n')[-1]) # Print the final lines/results
-        else:
-            print(f"Error executing SQL script: {result.stderr}")
+        conn = psycopg2.connect(os.environ.get('POSTGRES_URL', "dbname=postgres"))
+        cur = conn.cursor()
+        cur.execute("DELETE FROM tactical_terrain;")
+        
+        insert_query = """
+            INSERT INTO tactical_terrain 
+            (id, filename, latitude, longitude, embedding) 
+            VALUES %s;
+        """
+        psycopg2.extras.execute_values(cur, insert_query, data_rows, page_size=1000)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("Successfully populated tactical_terrain table!")
     except Exception as e:
-        print(f"Subprocess run failed: {str(e)}")
+        print(f"Database insertion failed: {str(e)}")
 
 def main():
     # Make sure download directory exists

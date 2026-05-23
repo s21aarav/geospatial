@@ -25,7 +25,7 @@ import jakarta.annotation.PostConstruct;
 
 @RestController
 @RequestMapping("/api/v1/intelligence")
-@CrossOrigin(origins = "*") // For local dev with Vite
+@CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:5173}")
 public class IntelligenceController {
 
     private final RabbitTemplate rabbitTemplate;
@@ -70,6 +70,22 @@ public class IntelligenceController {
         try {
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
+            }
+
+            // Secure Magic Bytes Validation
+            byte[] header = new byte[4];
+            try (java.io.InputStream is = file.getInputStream()) {
+                int bytesRead = is.read(header, 0, 4);
+                if (bytesRead < 4) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "File is too small to be a valid image"));
+                }
+            }
+            boolean isJpeg = (header[0] == (byte) 0xFF && header[1] == (byte) 0xD8);
+            boolean isPng = (header[0] == (byte) 0x89 && header[1] == (byte) 0x50 && header[2] == (byte) 0x4E && header[3] == (byte) 0x47);
+            boolean isTiffI = (header[0] == (byte) 0x49 && header[1] == (byte) 0x49 && header[2] == (byte) 0x2A && header[3] == (byte) 0x00);
+            boolean isTiffM = (header[0] == (byte) 0x4D && header[1] == (byte) 0x4D && header[2] == (byte) 0x00 && header[3] == (byte) 0x2A);
+            if (!isJpeg && !isPng && !isTiffI && !isTiffM) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid file signature. Only real JPEG, PNG, and TIFF images are allowed."));
             }
 
             // Generate UUID and path
@@ -175,7 +191,14 @@ public class IntelligenceController {
     @GetMapping(value = "/images/{category}/{filename}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getImage(@PathVariable("category") String category, @PathVariable("filename") String filename) {
         try {
-            Path imagePath = Paths.get(dataDir, "eurosat", "web", category, filename);
+            Path basePath = Paths.get(dataDir, "eurosat", "web").toAbsolutePath().normalize();
+            Path imagePath = basePath.resolve(Paths.get(category, filename)).toAbsolutePath().normalize();
+            
+            // Path traversal protection
+            if (!imagePath.startsWith(basePath)) {
+                return ResponseEntity.badRequest().build();
+            }
+            
             if (Files.exists(imagePath)) {
                 byte[] imageBytes = Files.readAllBytes(imagePath);
                 return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(imageBytes);
@@ -205,11 +228,18 @@ public class IntelligenceController {
     /**
      * Serves original EuroSAT multispectral TIF files for evaluation benchmarks.
      */
-    @GetMapping(value = "/tif/{category}/{filename}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(value = "/tif/{category}/{filename}", produces = "image/tiff")
     public ResponseEntity<byte[]> getTif(@PathVariable("category") String category, @PathVariable("filename") String filename) {
         try {
             // EuroSAT MS dataset path
-            Path tifPath = Paths.get(dataDir, "eurosat", "EuroSAT_MS", category, filename);
+            Path basePath = Paths.get(dataDir, "eurosat", "EuroSAT_MS").toAbsolutePath().normalize();
+            Path tifPath = basePath.resolve(Paths.get(category, filename)).toAbsolutePath().normalize();
+            
+            // Path traversal protection
+            if (!tifPath.startsWith(basePath)) {
+                return ResponseEntity.badRequest().build();
+            }
+            
             if (Files.exists(tifPath)) {
                 byte[] tifBytes = Files.readAllBytes(tifPath);
                 return ResponseEntity.ok()

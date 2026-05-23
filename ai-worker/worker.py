@@ -11,8 +11,22 @@ import gc
 import threading
 from transformers import AutoModel
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "time": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "message": record.getMessage()
+        }
+        if hasattr(record, "metrics"):
+            log_record["metrics"] = record.metrics
+        return json.dumps(log_record)
+
 logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logger.handlers = [handler]
+logger.setLevel(logging.INFO)
 
 # Asynchronous GPU Memory Flusher State for 8GB Mac Swap Prevention
 last_activity_time = time.time()
@@ -42,18 +56,25 @@ device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 logger.info(f"Using device: {device}")
 
 logger.info("Downloading/Loading Vision Transformer (ViT) Foundation Model...")
+import os
+model_is_half = False
 # The official Prithvi model does not support AutoModel directly. Using standard ViT for pipeline execution.
 model = AutoModel.from_pretrained("google/vit-base-patch16-224", output_attentions=True)
 model.to(device)
-if device.type == "mps":
-    model.half()
+if device.type == "mps" and os.environ.get('USE_HALF_PRECISION', 'false').lower() == 'true':
+    try:
+        model.half()
+        model_is_half = True
+        logger.info("Successfully applied float16 precision to MPS model.")
+    except Exception as e:
+        logger.warning(f"Failed to apply float16 precision on MPS, falling back to float32: {e}")
 model.eval()
 
 # Warmup Apple Silicon (MPS) device to compile Metal Performance Shaders
 logger.info("Warming up MPS device with a dummy forward pass...")
 with torch.no_grad():
     dummy_input = torch.randn(1, 3, 224, 224).to(device)
-    if device.type == "mps":
+    if model_is_half:
         dummy_input = dummy_input.half()
     _ = model(dummy_input)
 logger.info("MPS Warmup complete.")
@@ -125,7 +146,7 @@ def preprocess_tiff(file_path: str, ch, task_id):
             tensor = F.interpolate(tensor, size=(224, 224), mode='bilinear', align_corners=False)
             
         tensor = tensor.to(device)
-        if device.type == "mps":
+        if model_is_half:
             tensor = tensor.half()
         
         if brightness > 10000: brightness = 10000.0
@@ -237,13 +258,16 @@ def callback(ch, method, properties, body):
         
         t_end = time.time()
         
-        logger.info(f"TIMING BREAKDOWN for task {task_id}:")
-        logger.info(f"  - Ack Publish: {(t_after_ack - t_before_ack) * 1000:.2f} ms")
-        logger.info(f"  - Preprocessing: {(t_after_prep - t_before_prep) * 1000:.2f} ms")
-        logger.info(f"  - Inference (Model): {(t_after_infer - t_before_infer) * 1000:.2f} ms")
-        logger.info(f"  - Heatmap Gen: {(t_after_xai - t_before_xai) * 1000:.2f} ms")
-        logger.info(f"  - Publish Response: {(t_after_pub - t_before_pub) * 1000:.2f} ms")
-        logger.info(f"  - Total Callback Time: {(t_end - t_start) * 1000:.2f} ms")
+        metrics = {
+            "task_id": task_id,
+            "ack_ms": (t_after_ack - t_before_ack) * 1000,
+            "prep_ms": (t_after_prep - t_before_prep) * 1000,
+            "infer_ms": (t_after_infer - t_before_infer) * 1000,
+            "xai_ms": (t_after_xai - t_before_xai) * 1000,
+            "pub_ms": (t_after_pub - t_before_pub) * 1000,
+            "total_ms": (t_end - t_start) * 1000
+        }
+        logger.info(f"Task {task_id} completed successfully.", extra={"metrics": metrics})
         
     except Exception as e:
         logger.error(f"Error processing message: {str(e)}")

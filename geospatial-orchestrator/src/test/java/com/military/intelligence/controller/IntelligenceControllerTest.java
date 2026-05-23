@@ -38,7 +38,8 @@ class IntelligenceControllerTest {
 
     @Test
     void testHybridWeightNormalization() {
-        MockMultipartFile nonEmptyFile = new MockMultipartFile("file", "test.tif", "image/tiff", "dummy".getBytes());
+        byte[] validTiffHeader = new byte[] { 0x49, 0x49, 0x2A, 0x00, 0x00 };
+        MockMultipartFile nonEmptyFile = new MockMultipartFile("file", "test.tif", "image/tiff", validTiffHeader);
         
         // Call with weights summing to 2.0 (1.0 + 0.5 + 0.3 + 0.2 = 2.0)
         ResponseEntity<?> response = controller.uploadImage(
@@ -61,7 +62,8 @@ class IntelligenceControllerTest {
 
     @Test
     void testSpectralWeightNormalization() {
-        MockMultipartFile file = new MockMultipartFile("file", "test.tif", "image/tiff", "dummy".getBytes());
+        byte[] validTiffHeader = new byte[] { 0x49, 0x49, 0x2A, 0x00, 0x00 };
+        MockMultipartFile file = new MockMultipartFile("file", "test.tif", "image/tiff", validTiffHeader);
         
         ResponseEntity<?> response = controller.uploadImage(
                 file, null, 5, 0.0, null, "SPECTRAL_ONLY", 1.0, 0.3, 0.1, 0.1, null, null, null, null
