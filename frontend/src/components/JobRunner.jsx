@@ -90,8 +90,7 @@ export default function JobRunner({ job, isActive, updateJob }) {
       )}
       
       {job.visualStatus === 'COMPLETED' && job.status === 'COMPLETED' && isActive && (
-        <div className="w-full flex flex-col items-center animate-fade-in mt-8 float-3">
-          <div className="w-full border-t border-tactical-muted/20 my-8 mb-4"></div>
+        <div className="w-full flex flex-col items-center animate-fade-in mt-4 float-3">
           <MapResults 
               results={job.results} 
               queryStats={job.queryStats} 
