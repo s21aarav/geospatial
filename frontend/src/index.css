@@ -32,7 +32,7 @@
 
   .dark {
     --tactical-dark: #000000;
-    --tactical-panel: rgba(15, 15, 20, 0.5);
+    --tactical-panel: rgba(15, 15, 20, 0.15);
     --tactical-accent: #ffffff;
     --tactical-success: #4ade80;
     --tactical-warning: #facc15;
@@ -91,7 +91,7 @@
 }
 
 .glass-panel {
-  @apply bg-tactical-panel backdrop-blur-sm border border-white/10 shadow-lg;
+  @apply bg-tactical-panel backdrop-blur-md shadow-lg rounded-xl;
 }
 
 /* Scrollbar styles for a mature look */

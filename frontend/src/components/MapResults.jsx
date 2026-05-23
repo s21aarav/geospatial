@@ -80,8 +80,8 @@ export default function MapResults({ results, queryStats, isActive = true, taskI
   if (!results || results.length === 0 || !activeCenter) return null;
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 mt-4 bg-tactical-dark border border-tactical-muted/20">
-      <div className="flex justify-between items-end mb-6 border-b border-tactical-muted/30 pb-2 flex-wrap gap-2">
+    <div className="w-full max-w-6xl mx-auto p-4 mt-4 bg-black/10 backdrop-blur-md rounded-xl shadow-2xl">
+      <div className="flex justify-between items-end mb-6 pb-2 flex-wrap gap-2">
         <h2 className="text-sm tracking-widest font-mono text-tactical-muted flex items-center uppercase flex-wrap gap-x-4">
           <span className="flex items-center"><Target className="mr-2 w-4 h-4" /> Geospatial Matches (Top 5)</span>
           {queryStats?.taskMetrics?.totalTimeMs && (
@@ -104,7 +104,7 @@ export default function MapResults({ results, queryStats, isActive = true, taskI
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
-        <div className="w-full lg:w-3/4 h-[600px] border border-tactical-muted/30 relative z-0 bg-black">
+        <div className="w-full lg:w-3/4 h-[600px] relative z-0 bg-black/10 rounded-lg overflow-hidden backdrop-blur-sm">
           <MapContainer center={activeCenter} zoom={17} style={{ height: '100%', width: '100%' }}>
             {/* Dynamic Map Tile Layer */}
             <TileLayer
@@ -146,9 +146,9 @@ export default function MapResults({ results, queryStats, isActive = true, taskI
             <div 
               key={idx} 
               onClick={() => setActiveCenter([res.latitude, res.longitude])}
-              className="bg-tactical-panel backdrop-blur-sm border border-tactical-muted/20 p-3 hover:border-tactical-muted/50 transition-colors flex flex-col gap-3 cursor-pointer"
+              className="bg-black/10 backdrop-blur-md p-3 hover:bg-black/30 transition-colors flex flex-col gap-3 cursor-pointer rounded-lg"
             >
-              <div className="flex justify-between items-center border-b border-tactical-muted/20 pb-2">
+              <div className="flex justify-between items-center pb-2">
                 <span className="font-mono font-bold text-tactical-text text-xs">#{idx + 1} - {res.terrainClass}</span>
                 <span className="font-mono text-tactical-dark bg-tactical-text px-1.5 py-0.5 text-[10px] font-bold">
                   {(res.similarityScore * 100).toFixed(1)}% FINAL SCORE
@@ -157,7 +157,7 @@ export default function MapResults({ results, queryStats, isActive = true, taskI
               <img 
                 src={`http://localhost:8080/api/v1/intelligence/images/${res.filename}`} 
                 alt={res.filename}
-                className="w-full h-24 object-cover border border-tactical-muted/30 grayscale hover:grayscale-0 transition-all duration-500"
+                className="w-full h-24 object-cover grayscale hover:grayscale-0 transition-all duration-500 rounded"
               />
               <div className="font-mono text-[10px] text-tactical-muted space-y-1">
                 <div className="flex justify-between">

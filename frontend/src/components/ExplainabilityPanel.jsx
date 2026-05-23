@@ -19,8 +19,8 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
     const heatmapImgSrc = `http://localhost:8080/api/v1/intelligence/heatmap/${taskId}`;
 
     return (
-        <div className="bg-tactical-panel backdrop-blur-sm border border-tactical-muted/30 p-4 w-full flex flex-col gap-4 mt-4 animate-fade-in shadow-xl">
-            <div className="flex justify-between items-center border-b border-tactical-muted/30 pb-2 flex-wrap gap-2">
+        <div className="bg-black/10 backdrop-blur-md p-4 w-full flex flex-col gap-4 mt-4 animate-fade-in shadow-xl rounded-xl">
+            <div className="flex justify-between items-center pb-2 flex-wrap gap-2">
                 <h3 className="text-tactical-accent font-mono text-sm tracking-widest">EXPLAINABILITY PANEL</h3>
                 <div className="flex gap-4 items-center text-[10px] font-mono flex-wrap">
                     {queryStats?.taskMetrics && (
@@ -47,7 +47,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
                 {/* Column 1: Target Profile */}
                 <div className="flex flex-col gap-2 h-full">
                     <span className="text-[10px] text-tactical-muted font-mono tracking-widest h-4">TARGET PROFILE</span>
-                    <div className="w-full flex-grow min-h-[8rem] border border-tactical-muted/50 overflow-hidden">
+                    <div className="w-full flex-grow min-h-[8rem] overflow-hidden rounded-lg">
                         <img src={targetImgSrc} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500 scale-100 hover:scale-105"/>
                     </div>
                     <div className="text-[10px] font-mono mt-2 space-y-1 h-8">
@@ -61,7 +61,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
                     <span className="text-[10px] text-tactical-muted font-mono tracking-widest flex justify-between h-4">
                         <span>SCORE BREAKDOWN</span>
                     </span>
-                    <div className="bg-black/40 backdrop-blur-md p-3 border border-white/10 text-[10px] font-mono flex-grow flex flex-col justify-around min-h-[8rem]">
+                    <div className="bg-black/10 backdrop-blur-md p-3 text-[10px] font-mono flex-grow flex flex-col justify-around min-h-[8rem] rounded-lg">
                         <ProgressBar label={`VIT SEMANTIC${queryStats?.vitWeight ? ` (W: ${(queryStats.vitWeight).toFixed(2)})` : ''}`} score={result.vitScore || 0} colorClass="bg-tactical-accent" />
                         <ProgressBar label={`NDVI (VEGETATION)${queryStats?.ndviWeight ? ` (W: ${(queryStats.ndviWeight).toFixed(2)})` : ''}`} score={result.ndviScore || 0} colorClass="bg-green-500" />
                         <ProgressBar label={`NDWI (WATER)${queryStats?.ndwiWeight ? ` (W: ${(queryStats.ndwiWeight).toFixed(2)})` : ''}`} score={result.ndwiScore || 0} colorClass="bg-blue-500" />
@@ -77,7 +77,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
                             <span>XAI ATTENTION HEATMAP</span>
                             <span className="text-tactical-accent">ViT Grad-CAM</span>
                         </span>
-                        <div className="relative group w-full flex-grow min-h-[8rem] border border-tactical-muted/50 bg-black overflow-hidden">
+                        <div className="relative group w-full flex-grow min-h-[8rem] bg-black/10 overflow-hidden rounded-lg">
                             <img src={heatmapImgSrc} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" alt="XAI Heatmap" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center flex-col gap-2">
                                 <span className="text-[8px] font-mono text-tactical-text text-center px-2">Visualizing Neural Attention over Uploaded Target</span>
@@ -88,7 +88,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
                 )}
             </div>
 
-            <div className="mt-2 bg-black/40 backdrop-blur-sm p-3 border-l-2 border-tactical-accent text-xs font-mono text-tactical-text">
+            <div className="mt-2 bg-black/10 backdrop-blur-sm p-3 border-l-2 border-tactical-accent text-xs font-mono text-tactical-text rounded-r-lg">
                 <span className="text-tactical-muted mr-2">REASONING:</span>
                 {result.explanation || "Match computed by hybrid retrieval engine."}
             </div>

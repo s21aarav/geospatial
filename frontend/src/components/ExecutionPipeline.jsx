@@ -117,9 +117,9 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
   const filteredLogs = selectedStep ? logs.filter(l => l.stepId === selectedStep) : logs;
 
   return (
-    <div className="w-full max-w-5xl mx-auto rounded-lg flex flex-col h-[550px] border border-tactical-accent/40 bg-[#050505] font-mono relative overflow-hidden shadow-2xl">
+    <div className="w-full max-w-5xl mx-auto rounded-xl flex flex-col h-[550px] bg-black/10 backdrop-blur-md font-mono relative overflow-hidden shadow-2xl">
       
-      <div className="flex justify-between items-center bg-[#0a0a0a] px-4 py-3 border-b border-tactical-accent/30 z-10">
+      <div className="flex justify-between items-center bg-black/20 px-4 py-3 z-10">
         <div className="flex gap-2 items-center">
           <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
           <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
@@ -142,7 +142,7 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
 
       <div className="flex flex-row flex-grow overflow-hidden z-10">
         
-        <div ref={leftPaneRef} className="w-[35%] bg-[#0a0a0a] border-r border-tactical-accent/20 overflow-y-auto p-4 space-y-2 relative" style={{ scrollbarWidth: 'none' }}>
+        <div ref={leftPaneRef} className="w-[35%] bg-black/20 overflow-y-auto p-4 space-y-2 relative" style={{ scrollbarWidth: 'none' }}>
             {pipelineSchema.map((step, idx) => {
                 const isCompleted = idx < activeIndex || visualStatus === 'COMPLETED';
                 const isActive = idx === activeIndex && visualStatus === 'PROCESSING';
@@ -159,7 +159,7 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
                     <div 
                         key={step.id}
                         onClick={() => setSelectedStep(isSelected ? null : step.id)}
-                        className={`p-3 rounded-md border flex items-center cursor-pointer transition-all duration-300 ${stateClass} ${isSelected ? 'ring-1 ring-tactical-accent bg-tactical-accent/10' : ''}`}
+                        className={`p-3 rounded-xl flex items-center cursor-pointer transition-all duration-300 ${stateClass} ${isSelected ? 'ring-1 ring-tactical-accent bg-tactical-accent/10' : ''}`}
                     >
                         <div className="mr-3 flex-shrink-0">
                             {isCompleted && !isError && <CheckCircle2 className="w-5 h-5 text-tactical-success" />}
@@ -178,9 +178,9 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
             })}
         </div>
 
-        <div className="w-[65%] relative bg-[#030303] flex flex-col">
+        <div className="w-[65%] relative bg-black/10 flex flex-col">
             {selectedStep && (
-                <div className="absolute top-0 left-0 right-0 bg-[#0a0a0a] border-b border-tactical-accent/20 px-4 py-2 flex justify-between items-center text-[10px] z-20">
+                <div className="absolute top-0 left-0 right-0 bg-black/20 px-4 py-2 flex justify-between items-center text-[10px] z-20">
                     <span className="text-tactical-accent uppercase tracking-wider">Filtered View: {selectedStep}</span>
                     <button onClick={() => setSelectedStep(null)} className="text-tactical-muted hover:text-white transition-colors">Clear Filter ✕</button>
                 </div>

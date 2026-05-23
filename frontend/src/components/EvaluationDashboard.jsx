@@ -193,7 +193,7 @@ export default function EvaluationDashboard({ onBack }) {
     };
 
     return (
-        <div className="w-full max-w-5xl glass-panel p-8 text-tactical-text font-mono border-tactical-accent/50 animate-fade-in relative z-10">
+        <div className="w-full max-w-5xl glass-panel p-8 text-tactical-text font-mono animate-fade-in relative z-10">
             <div className="flex justify-between items-center border-b border-tactical-muted/30 pb-4 mb-6">
                 <h2 className="text-xl tracking-widest text-tactical-accent uppercase">Evaluation Dashboard</h2>
                 <button onClick={onBack} className="text-tactical-muted hover:text-tactical-text transition-colors">
@@ -221,7 +221,7 @@ export default function EvaluationDashboard({ onBack }) {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="col-span-1 bg-tactical-dark p-4 border border-tactical-muted/20 h-80 overflow-y-auto font-mono text-[10px] space-y-1">
+                        <div className="col-span-1 bg-black/10 backdrop-blur-md p-4 h-80 overflow-y-auto font-mono text-[10px] space-y-1 rounded-lg shadow-inner">
                             {logs.map((log, i) => (
                                 <div key={i} className={
                                     log.includes('ERROR') ? 'text-red-400' :
@@ -233,7 +233,7 @@ export default function EvaluationDashboard({ onBack }) {
                         </div>
 
                         {Object.keys(metricsMap).length > 0 && (
-                            <div className="col-span-2 bg-tactical-dark p-6 border border-tactical-accent/30 flex flex-col overflow-x-auto">
+                            <div className="col-span-2 bg-black/10 backdrop-blur-md p-6 flex flex-col overflow-x-auto rounded-lg shadow-inner">
                                 <h3 className="text-tactical-accent tracking-widest border-b border-tactical-muted/30 pb-2 mb-4">MODE COMPARISON</h3>
                                 <table className="w-full text-left text-xs text-tactical-muted">
                                     <thead>
@@ -274,7 +274,7 @@ export default function EvaluationDashboard({ onBack }) {
                     </div>
 
                     {Object.keys(confusionMatrix).length > 0 && (
-                        <div className="bg-tactical-dark p-6 border border-tactical-muted/30 overflow-x-auto">
+                        <div className="bg-black/10 backdrop-blur-md p-6 overflow-x-auto rounded-lg shadow-inner mt-6">
                             <h3 className="text-tactical-accent text-sm tracking-widest border-b border-tactical-muted/30 pb-2 mb-4">HYBRID MODE CONFUSION MATRIX</h3>
                             <table className="w-full text-center text-[10px] font-mono border-collapse">
                                 <thead>
@@ -308,7 +308,7 @@ export default function EvaluationDashboard({ onBack }) {
             )}
             
             {history.length > 0 && (
-                <div className="mt-8 bg-tactical-dark p-6 border border-tactical-muted/30 w-full overflow-x-auto">
+                <div className="mt-8 bg-black/10 backdrop-blur-md p-6 w-full overflow-x-auto rounded-lg shadow-inner">
                     <h3 className="text-tactical-accent tracking-widest border-b border-tactical-muted/30 pb-2 mb-4">EVALUATION HISTORY</h3>
                     <table className="w-full text-left text-[10px] text-tactical-muted">
                         <thead>
