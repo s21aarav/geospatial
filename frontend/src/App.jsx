@@ -46,7 +46,9 @@ function App() {
       events: [],
       results: [],
       queryStats: null,
-      errorMsg: null
+      errorMsg: null,
+      startTime: Date.now(),
+      endTime: null
     };
     
     setJobs(prev => [newJob, ...prev]);
@@ -106,12 +108,14 @@ function App() {
 
             if (payload.status === 'COMPLETED') {
               updates.results = payload.results;
+              updates.endTime = Date.now();
               if (payload.queryStats) {
                 updates.queryStats = payload.queryStats;
               }
             } else if (payload.status === 'FAILED' || payload.status === 'ERROR') {
               updates.status = 'ERROR';
               updates.visualStatus = 'ERROR';
+              updates.endTime = Date.now();
               updates.errorMsg = payload.error || 'Unknown error occurred in processing pipeline.';
             }
             return { ...j, ...updates };

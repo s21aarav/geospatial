@@ -42,3 +42,9 @@ server:
 logging:
   level:
     com.military.intelligence: DEBUG
+
+app:
+  data:
+    dir: ${DATA_DIR:../data}
+  upload:
+    dir: ${UPLOAD_DIR:/tmp/geo_ingest/}

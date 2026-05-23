@@ -14,7 +14,8 @@ def extract_polygon():
     except:
         return
     
-    base_dir = "/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web"
+    data_dir = os.getenv("DATA_DIR", "./data")
+    base_dir = os.path.join(data_dir, "eurosat", "web")
     
     for res in results:
         cat = res.get('category', '')

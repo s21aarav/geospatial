@@ -13,8 +13,8 @@ from PIL import Image
 from transformers import AutoModel
 
 # Configuration
-DATA_DIR = "/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data"
-ZIP_PATH = "/Users/aaravsingh/Downloads/EuroSAT_MS.zip"
+DATA_DIR = os.getenv("DATA_DIR", "./data")
+ZIP_PATH = os.getenv("ZIP_PATH", "./EuroSAT_MS.zip")
 EXTRACT_DIR = os.path.join(DATA_DIR, "eurosat")
 WEB_DIR = os.path.join(EXTRACT_DIR, "web")
 SQL_PATH = os.path.join(DATA_DIR, "seed_eurosat.sql")
@@ -195,7 +195,7 @@ def main():
 
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     
-    sql_statements = ["-- Seeding EuroSAT Dataset\n", "DELETE FROM tactical_terrain;\n"]
+    sql_statements = ["-- Seeding EuroSAT Dataset\n", "BEGIN;\n", "DELETE FROM tactical_terrain;\n"]
     
     start_time = time.time()
     processed = 0
@@ -215,6 +215,7 @@ def main():
             
     # Write SQL
     print(f"Writing SQL seed script to {SQL_PATH}...")
+    sql_statements.append("COMMIT;\n")
     with open(SQL_PATH, 'w') as f:
         f.writelines(sql_statements)
         

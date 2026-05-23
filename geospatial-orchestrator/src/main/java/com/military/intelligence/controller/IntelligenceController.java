@@ -20,6 +20,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
 
 @RestController
 @RequestMapping("/api/v1/intelligence")
@@ -30,16 +32,23 @@ public class IntelligenceController {
     private final StateManager stateManager;
     private final SseRegistry sseRegistry;
     private final ObjectMapper objectMapper;
-    private static final String UPLOAD_DIR = "/tmp/geo_ingest/";
+    
+    @Value("${app.upload.dir:/tmp/geo_ingest/}")
+    private String uploadDir;
+
+    @Value("${app.data.dir:./data}")
+    private String dataDir;
 
     public IntelligenceController(RabbitTemplate rabbitTemplate, StateManager stateManager, SseRegistry sseRegistry, ObjectMapper objectMapper) {
         this.rabbitTemplate = rabbitTemplate;
         this.stateManager = stateManager;
         this.sseRegistry = sseRegistry;
         this.objectMapper = objectMapper;
-        
-        // Ensure upload directory exists
-        new File(UPLOAD_DIR).mkdirs();
+    }
+
+    @PostConstruct
+    public void init() {
+        new File(uploadDir).mkdirs();
     }
 
     @PostMapping("/upload")
@@ -58,30 +67,18 @@ public class IntelligenceController {
             @RequestParam(value = "maxLat", required = false) Double maxLat,
             @RequestParam(value = "minLon", required = false) Double minLon,
             @RequestParam(value = "maxLon", required = false) Double maxLon) {
-        
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("File is empty");
-        }
-
-        UUID taskId;
-        if (taskIdStr != null && !taskIdStr.isEmpty()) {
-            try {
-                taskId = UUID.fromString(taskIdStr);
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().body("Invalid taskId format");
-            }
-        } else {
-            taskId = UUID.randomUUID();
-        }
-        // Preserve original extension so rasterio/PIL can detect format
-        String originalName = file.getOriginalFilename();
-        String extension = ".tiff";
-        if (originalName != null && originalName.contains(".")) {
-            extension = originalName.substring(originalName.lastIndexOf("."));
-        }
-        Path destination = Paths.get(UPLOAD_DIR + taskId + extension);
-
         try {
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
+            }
+
+            // Generate UUID and path
+            UUID taskId = (taskIdStr != null && !taskIdStr.trim().isEmpty()) ? UUID.fromString(taskIdStr) : UUID.randomUUID();
+            String originalFilename = file.getOriginalFilename();
+            String extension = (originalFilename != null && originalFilename.contains(".")) ? originalFilename.substring(originalFilename.lastIndexOf(".")) : ".tiff";
+            String newFilename = taskId + extension;
+            Path destination = Paths.get(uploadDir + newFilename);
+
             // Save file natively
             Files.write(destination, file.getBytes());
             
@@ -178,7 +175,7 @@ public class IntelligenceController {
     @GetMapping(value = "/images/{category}/{filename}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getImage(@PathVariable("category") String category, @PathVariable("filename") String filename) {
         try {
-            Path imagePath = Paths.get("/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web/", category, filename);
+            Path imagePath = Paths.get(dataDir, "eurosat", "web", category, filename);
             if (Files.exists(imagePath)) {
                 byte[] imageBytes = Files.readAllBytes(imagePath);
                 return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(imageBytes);
@@ -193,7 +190,7 @@ public class IntelligenceController {
     @GetMapping(value = "/heatmap/{taskId}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getHeatmap(@PathVariable("taskId") UUID taskId) {
         try {
-            Path heatmapPath = Paths.get(UPLOAD_DIR + taskId + "_heatmap.png");
+            Path heatmapPath = Paths.get(uploadDir + taskId + "_heatmap.png");
             if (Files.exists(heatmapPath)) {
                 byte[] imageBytes = Files.readAllBytes(heatmapPath);
                 return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(imageBytes);
@@ -212,7 +209,7 @@ public class IntelligenceController {
     public ResponseEntity<byte[]> getTif(@PathVariable("category") String category, @PathVariable("filename") String filename) {
         try {
             // EuroSAT MS dataset path
-            Path tifPath = Paths.get("/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/EuroSAT_MS/", category, filename);
+            Path tifPath = Paths.get(dataDir, "eurosat", "EuroSAT_MS", category, filename);
             if (Files.exists(tifPath)) {
                 byte[] tifBytes = Files.readAllBytes(tifPath);
                 return ResponseEntity.ok()

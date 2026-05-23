@@ -77,18 +77,20 @@ export default function JobRunner({ job, isActive, updateJob }) {
       )}
 
       {job.status !== 'IDLE' && job.status !== 'ERROR' && (
-        <div className="w-full">
+        <div className="w-full float-2">
           <ExecutionPipeline 
               events={job.events} 
               currentStatus={job.status} 
               errorMsg={job.errorMsg}
+              startTime={job.startTime}
+              endTime={job.endTime}
               onVisualCompletion={handleVisualCompletion} 
           />
         </div>
       )}
       
       {job.visualStatus === 'COMPLETED' && job.status === 'COMPLETED' && isActive && (
-        <div className="w-full flex flex-col items-center animate-fade-in mt-8">
+        <div className="w-full flex flex-col items-center animate-fade-in mt-8 float-3">
           <div className="w-full border-t border-tactical-muted/20 my-8 mb-4"></div>
           <MapResults 
               results={job.results} 

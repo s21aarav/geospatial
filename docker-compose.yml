@@ -42,11 +42,12 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
+      - DATA_DIR=/app/data
+      - UPLOAD_DIR=/tmp/geo_ingest/
     volumes:
       - /tmp/geo_ingest:/tmp/geo_ingest
       # Mounting user data folder so backend can serve ingested images via endpoint
-      - ./data/eurosat/web:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web
-      - ./data/eurosat/EuroSAT_MS:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/EuroSAT_MS
+      - ./data:/app/data
     depends_on:
       - postgres
       - rabbitmq
@@ -70,12 +71,13 @@ services:
       context: ./ai-worker
     environment:
       - RABBITMQ_HOST=rabbitmq
+      - DATA_DIR=/app/data
+      - UPLOAD_DIR=/tmp/geo_ingest/
     depends_on:
       - rabbitmq
     volumes:
       - /tmp/geo_ingest:/tmp/geo_ingest
-      - ./data/eurosat/web:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/web
-      - ./data/eurosat/EuroSAT_MS:/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data/eurosat/EuroSAT_MS
+      - ./data:/app/data
 
 volumes:
   postgres_data:

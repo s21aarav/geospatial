@@ -12,7 +12,7 @@ from PIL import Image
 from transformers import AutoModel
 
 # Configuration
-DATA_DIR = "/Users/aaravsingh/Desktop/GROSPATIAL MODEL/data"
+DATA_DIR = os.getenv("DATA_DIR", "./data")
 ZIP_URL = "http://weegee.vision.ucmerced.edu/datasets/UCMerced_LandUse.zip"
 ZIP_PATH = os.path.join(DATA_DIR, "UCMerced_LandUse.zip")
 EXTRACT_DIR = os.path.join(DATA_DIR, "ucmerced")
@@ -206,7 +206,7 @@ def process_and_seed():
     
     print(f"Found {len(categories)} categories: {categories}")
     
-    sql_statements = ["-- Seeding Tactical Terrain Dataset\n", "DELETE FROM tactical_terrain;\n"]
+    sql_statements = ["-- Seeding Tactical Terrain Dataset\n", "BEGIN;\n", "DELETE FROM tactical_terrain;\n"]
     
     processed_count = 0
     
@@ -269,6 +269,7 @@ def process_and_seed():
                 
     # Write to seed_data.sql
     print(f"Writing SQL seed script containing {processed_count} entries to {SQL_PATH}...")
+    sql_statements.append("COMMIT;\n")
     with open(SQL_PATH, 'w') as f:
         f.writelines(sql_statements)
         

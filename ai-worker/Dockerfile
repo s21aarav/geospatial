@@ -13,15 +13,8 @@ WORKDIR /app
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Install dependencies directly
-# (Using requirements based on worker.py imports)
-RUN pip install \
-    numpy \
-    pika \
-    rasterio \
-    torch \
-    torchvision \
-    transformers
+COPY requirements.txt /app/
+RUN pip install -r requirements.txt
 
 COPY . /app/
 

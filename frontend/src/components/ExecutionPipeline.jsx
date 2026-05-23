@@ -18,7 +18,7 @@ const pipelineSchema = [
   { id: 'COMPLETED', name: 'INTELLIGENCE_AGGREGATED', fakeLogs: ['Pipeline successfully terminated', 'Results flushed to UI', 'Closing AMQP channel'] }
 ];
 
-export default function ExecutionPipeline({ events, currentStatus, onVisualCompletion }) {
+export default function ExecutionPipeline({ events, currentStatus, onVisualCompletion, startTime, endTime }) {
   const terminalRef = useRef(null);
   
   const [displayIndex, setDisplayIndex] = useState(0);
@@ -32,14 +32,10 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
   }, [events.length]);
 
   useEffect(() => {
-    if (events.length > 0 && displayIndex < events.length - 1) {
-      // Blazing fast visual catch-up: 5ms per step (just enough to see it scroll)
-      const timer = setTimeout(() => {
-        setDisplayIndex(prev => prev + 1);
-      }, 5);
-      return () => clearTimeout(timer);
+    if (events.length > 0) {
+      setDisplayIndex(events.length - 1);
     }
-  }, [events, displayIndex]);
+  }, [events]);
 
   const displayedEvents = events.slice(0, displayIndex + 1);
   const lastEvent = displayedEvents.length > 0 ? displayedEvents[displayedEvents.length - 1] : null;
@@ -49,13 +45,11 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
   const currentStep = pipelineSchema[activeIndex] || pipelineSchema[0];
 
   const isActuallyDone = currentStatus === 'COMPLETED' || currentStatus === 'ERROR';
-  const hasCaughtUp = displayIndex === events.length - 1;
-  const visualStatus = (isActuallyDone && hasCaughtUp) ? currentStatus : 'PROCESSING';
+  const visualStatus = isActuallyDone ? currentStatus : 'PROCESSING';
 
   useEffect(() => {
     if ((visualStatus === 'COMPLETED' || visualStatus === 'ERROR') && onVisualCompletion) {
-      const timer = setTimeout(() => onVisualCompletion(), 30); // Almost instant transition to map
-      return () => clearTimeout(timer);
+      onVisualCompletion();
     }
   }, [visualStatus, onVisualCompletion]);
 
@@ -106,9 +100,16 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
              <Terminal className="w-3 h-3 mr-2" /> root@palantir-ingest-node
           </span>
         </div>
-        <span className={`text-[10px] tracking-widest px-2 py-0.5 font-bold ${visualStatus === 'ERROR' ? 'bg-tactical-danger text-black' : visualStatus === 'COMPLETED' ? 'bg-tactical-success text-black' : 'text-[#27c93f] animate-pulse'}`}>
-          {visualStatus === 'ERROR' ? 'CRITICAL FAILURE' : visualStatus === 'COMPLETED' ? 'EXECUTION TERMINATED' : 'ACTIVE THREAD'}
-        </span>
+        <div className="flex gap-4 items-center">
+          {endTime && startTime && (
+            <span className="text-tactical-muted text-[10px] tracking-widest uppercase">
+              LATENCY: {(endTime - startTime)}ms
+            </span>
+          )}
+          <span className={`text-[10px] tracking-widest px-2 py-0.5 font-bold ${visualStatus === 'ERROR' ? 'bg-tactical-danger text-black' : visualStatus === 'COMPLETED' ? 'bg-tactical-success text-black' : 'text-[#27c93f] animate-pulse'}`}>
+            {visualStatus === 'ERROR' ? 'CRITICAL FAILURE' : visualStatus === 'COMPLETED' ? 'EXECUTION TERMINATED' : 'ACTIVE THREAD'}
+          </span>
+        </div>
       </div>
 
       <div 
