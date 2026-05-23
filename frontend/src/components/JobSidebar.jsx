@@ -3,7 +3,7 @@ import { Loader2, CheckCircle2, XCircle, CircleDashed, Plus } from 'lucide-react
 
 export default function JobSidebar({ jobs, activeJobId, setActiveJobId, onNewUplink }) {
   return (
-    <div className="fixed left-0 top-0 h-screen bg-black/10 backdrop-blur-md z-50 transition-all duration-300 ease-in-out w-16 hover:w-64 group/sidebar flex flex-col overflow-x-hidden shadow-lg float-1">
+    <div className="fixed left-0 top-0 h-screen bg-black/10 z-50 transition-all duration-300 ease-in-out w-16 hover:w-64 group/sidebar flex flex-col overflow-x-hidden shadow-lg float-1">
       
       {/* Header / New Uplink */}
       <div className="w-full flex items-center h-20 flex-shrink-0 border-b border-tactical-muted/30 px-2 cursor-pointer hover:bg-tactical-muted/10 transition-colors" onClick={onNewUplink}>

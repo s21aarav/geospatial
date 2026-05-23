@@ -19,7 +19,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
     const heatmapImgSrc = `http://localhost:8080/api/v1/intelligence/heatmap/${taskId}`;
 
     return (
-        <div className="bg-black/10 backdrop-blur-md p-4 w-full flex flex-col gap-4 mt-4 animate-fade-in shadow-xl rounded-xl">
+        <div className="bg-black/10 p-4 w-full flex flex-col gap-4 mt-4 animate-fade-in shadow-xl rounded-xl">
             <div className="flex justify-between items-center pb-2 flex-wrap gap-2">
                 <h3 className="text-tactical-accent font-mono text-sm tracking-widest">EXPLAINABILITY PANEL</h3>
                 <div className="flex gap-4 items-center text-[10px] font-mono flex-wrap">
@@ -61,7 +61,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
                     <span className="text-[10px] text-tactical-muted font-mono tracking-widest flex justify-between h-4">
                         <span>SCORE BREAKDOWN</span>
                     </span>
-                    <div className="bg-black/10 backdrop-blur-md p-3 text-[10px] font-mono flex-grow flex flex-col justify-around min-h-[8rem] rounded-lg">
+                    <div className="bg-black/10 p-3 text-[10px] font-mono flex-grow flex flex-col justify-around min-h-[8rem] rounded-lg">
                         <ProgressBar label={`VIT SEMANTIC${queryStats?.vitWeight ? ` (W: ${(queryStats.vitWeight).toFixed(2)})` : ''}`} score={result.vitScore || 0} colorClass="bg-tactical-accent" />
                         <ProgressBar label={`NDVI (VEGETATION)${queryStats?.ndviWeight ? ` (W: ${(queryStats.ndviWeight).toFixed(2)})` : ''}`} score={result.ndviScore || 0} colorClass="bg-green-500" />
                         <ProgressBar label={`NDWI (WATER)${queryStats?.ndwiWeight ? ` (W: ${(queryStats.ndwiWeight).toFixed(2)})` : ''}`} score={result.ndwiScore || 0} colorClass="bg-blue-500" />
@@ -88,7 +88,7 @@ export default function ExplainabilityPanel({ queryStats, result, taskId }) {
                 )}
             </div>
 
-            <div className="mt-2 bg-black/10 backdrop-blur-sm p-3 border-l-2 border-tactical-accent text-xs font-mono text-tactical-text rounded-r-lg">
+            <div className="mt-2 bg-black/10 p-3 border-l-2 border-tactical-accent text-xs font-mono text-tactical-text rounded-r-lg">
                 <span className="text-tactical-muted mr-2">REASONING:</span>
                 {result.explanation || "Match computed by hybrid retrieval engine."}
             </div>

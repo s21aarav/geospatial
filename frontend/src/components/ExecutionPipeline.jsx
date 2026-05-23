@@ -117,7 +117,7 @@ export default function ExecutionPipeline({ events, currentStatus, onVisualCompl
   const filteredLogs = selectedStep ? logs.filter(l => l.stepId === selectedStep) : logs;
 
   return (
-    <div className="w-full max-w-5xl mx-auto rounded-xl flex flex-col h-[550px] bg-black/10 backdrop-blur-md font-mono relative overflow-hidden shadow-2xl">
+    <div className="w-full max-w-5xl mx-auto rounded-xl flex flex-col h-[550px] bg-black/10 font-mono relative overflow-hidden shadow-2xl">
       
       <div className="flex justify-between items-center bg-black/20 px-4 py-3 z-10">
         <div className="flex gap-2 items-center">

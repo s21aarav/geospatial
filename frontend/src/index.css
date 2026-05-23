@@ -91,7 +91,7 @@
 }
 
 .glass-panel {
-  @apply bg-tactical-panel backdrop-blur-md shadow-lg rounded-xl;
+  @apply bg-tactical-panel shadow-lg rounded-xl;
 }
 
 /* Scrollbar styles for a mature look */
