@@ -37,7 +37,7 @@
 
   .dark {
     --tactical-dark: #000000;
-    --tactical-panel: rgba(15, 15, 20, 0.15);
+    --tactical-panel: rgba(255, 255, 255, 0.03); /* Faint white frost, absolutely no black tint */
     --tactical-accent: #ffffff;
     --tactical-success: #4ade80;
     --tactical-warning: #facc15;
