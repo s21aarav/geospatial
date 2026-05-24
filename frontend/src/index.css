@@ -139,3 +139,38 @@
   will-change: transform;
   animation: float 5s ease-in-out infinite 2s;
 }
+
+/* --- Shooting Stars (Comets) --- */
+.space-background::before, .space-background::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 150px;
+  height: 1.5px;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), #fff);
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px white);
+}
+
+@keyframes shoot1 {
+  0% { transform: translate(120vw, -20vh) rotate(135deg); opacity: 1; }
+  2% { transform: translate(-20vw, 120vh) rotate(135deg); opacity: 1; }
+  3% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes shoot2 {
+  0% { transform: translate(80vw, -40vh) rotate(135deg); opacity: 1; }
+  2% { transform: translate(-40vw, 80vh) rotate(135deg); opacity: 1; }
+  3% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+.space-background::before {
+  animation: shoot1 15s linear infinite;
+}
+.space-background::after {
+  animation: shoot2 23s linear infinite 7s;
+}
