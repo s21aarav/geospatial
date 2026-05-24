@@ -142,6 +142,11 @@ function App() {
         <div className="stars"></div>
         <div className="stars2"></div>
         <div className="stars3"></div>
+        <div className="constellations"></div>
+        <div className="slow-comet"></div>
+        <div className="solar-eclipse"></div>
+        <div className="wormhole"></div>
+        <div className="supernova"></div>
       </div>
       <div className={`min-h-screen p-8 flex flex-col items-center transition-all duration-300 overflow-x-hidden ${jobs.length > 0 && view !== 'EVALUATION' ? 'pl-24' : ''}`}>
         <header className="mb-12 text-center relative w-full flex justify-between items-center max-w-6xl mx-auto z-10 glass-panel px-6 py-4 rounded-xl">
